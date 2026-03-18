@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Ustad</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:'Inter',sans-serif;}
+
+:root{
+  --navy:#0d1f3c;
+  --blue:#1a56db;
+  --blue-dk:#1344b8;
+  --blue-lt:#eff6ff;
+  --blue-bd:#bfdbfe;
+  --g50:#f8fafc;
+  --g100:#f1f5f9;
+  --g200:#e2e8f0;
+  --g300:#cbd5e1;
+  --g400:#94a3b8;
+  --g500:#64748b;
+  --g700:#334155;
+  --g900:#0f172a;
+  --yellow:#f59e0b;
+  --green:#16a34a;
+  --green-lt:#f0fdf4;
+  --green-bd:#bbf7d0;
+  --red:#dc2626;
+  --red-lt:#fef2f2;
+  --red-bd:#fecaca;
+  --orange:#ea580c;
+  --orange-lt:#fff7ed;
+  --purple:#7c3aed;
+  --purple-lt:#f5f3ff;
+  --sb-w:260px;
+}
+
+/* ════ LAYOUT ════ */
+.shell{display:flex;min-height:100vh;}
+
+/* ════ SIDEBAR ════ */
+.sidebar{
+  width:var(--sb-w);flex-shrink:0;
+  background:var(--g900);
+  position:fixed;top:0;left:0;height:100vh;
+  display:flex;flex-direction:column;z-index:200;overflow-y:auto;
+}
+.sb-brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo{font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.sb-logo span{color:#f59e0b;}
+.sb-role{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.14em;margin-top:3px;}
+
+.sb-nav{flex:1;padding:10px 12px;}
+.sb-lbl{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.13em;padding:12px 8px 5px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:.84rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;margin-bottom:1px;}
+.sb-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);}
+.sb-item.on{background:rgba(245,158,11,.15);color:#fbbf24;font-weight:700;}
+.sb-item .ico{font-size:.95rem;width:20px;text-align:center;flex-shrink:0;}
+.sb-item .lbl{flex:1;}
+.sb-n{background:var(--red);color:#fff;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;margin-left:auto;}
+
+.sb-foot{padding:12px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-admin{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.05);border-radius:9px;margin-bottom:8px;}
+.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:900;color:#fff;flex-shrink:0;}
+.sb-aname{font-size:.8rem;font-weight:700;color:#fff;}
+.sb-arole{font-size:.65rem;color:rgba(255,255,255,.35);margin-top:1px;}
+
+/* ════ MAIN ════ */
+.main{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--g200);height:60px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:1rem;font-weight:800;color:var(--g900);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.btn{font-size:.8rem;font-weight:700;padding:8px 16px;border-radius:8px;transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:var(--blue-dk);}
+.btn-outline{border:1.5px solid var(--g200);color:var(--g700);background:#fff;}
+.btn-outline:hover{border-color:var(--g700);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#15803d;}
+.btn-red{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}
+.btn-red:hover{background:var(--red);color:#fff;}
+.btn-orange{background:var(--orange-lt);color:var(--orange);border:1px solid #fed7aa;}
+.btn-orange:hover{background:var(--orange);color:#fff;}
+.btn-sm{font-size:.73rem;padding:6px 11px;}
+.btn-xs{font-size:.68rem;padding:4px 9px;}
+
+.content{padding:24px 28px 80px;}
+
+/* ════ CARDS ════ */
+.card{background:#fff;border:1px solid var(--g200);border-radius:14px;overflow:hidden;margin-bottom:18px;}
+.card-header{padding:15px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:.9rem;font-weight:800;color:var(--g900);}
+.card-desc{font-size:.73rem;color:var(--g400);margin-top:1px;}
+.card-body{padding:20px;}
+.card-body.np{padding:0;}
+
+/* ════ STATS ════ */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat.blue::before{background:var(--blue);}
+.stat.green::before{background:var(--green);}
+.stat.yellow::before{background:var(--yellow);}
+.stat.purple::before{background:var(--purple);}
+.stat.red::before{background:var(--red);}
+.stat-icon{font-size:1.2rem;margin-bottom:8px;}
+.stat-val{font-size:1.5rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;line-height:1;}
+.stat-lbl{font-size:.7rem;color:var(--g400);margin-top:4px;}
+.stat-delta{font-size:.68rem;font-weight:600;margin-top:5px;}
+.up{color:var(--green);}
+.dn{color:var(--red);}
+
+/* ════ TABLE ════ */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.07em;padding:10px 16px;text-align:left;background:var(--g50);border-bottom:1px solid var(--g200);}
+tbody td{padding:12px 16px;font-size:.83rem;color:var(--g700);border-bottom:1px solid var(--g100);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--g50);}
+.td-name{font-weight:700;color:var(--g900);}
+
+/* ════ BADGES ════ */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:100px;}
+.b-active{background:var(--green-lt);color:#15803d;}
+.b-pending{background:#fef3c7;color:#92400e;}
+.b-suspended{background:var(--red-lt);color:var(--red);}
+.b-tutor{background:var(--blue-lt);color:var(--blue);}
+.b-student{background:var(--purple-lt);color:var(--purple);}
+.b-confirmed{background:var(--green-lt);color:#15803d;}
+.b-waiting{background:#fef3c7;color:#92400e;}
+.b-cancelled{background:var(--red-lt);color:var(--red);}
+
+/* ════ SEARCH + FILTER BAR ════ */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-input{
+  flex:1;min-width:200px;
+  padding:8px 12px 8px 36px;
+  border:1.5px solid var(--g200);border-radius:8px;
+  font-size:.83rem;color:var(--g900);outline:none;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 12px center;
+  transition:border-color .15s;
+}
+.search-input:focus{border-color:var(--blue);}
+.filter-select{padding:8px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.83rem;color:var(--g700);outline:none;background:#fff;cursor:pointer;}
+.filter-select:focus{border-color:var(--blue);}
+
+/* ════ USER AVATAR ════ */
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0;}
+
+/* ════ ACTIONS ════ */
+.actions{display:flex;gap:6px;align-items:center;}
+
+/* ════ MODAL ════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  z-index:500;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;padding:20px;
+}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal{
+  background:#fff;border-radius:16px;width:100%;max-width:520px;
+  max-height:85vh;overflow-y:auto;
+  transform:translateY(12px);transition:transform .2s;
+}
+.modal-overlay.show .modal{transform:translateY(0);}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--g900);}
+.modal-close{font-size:1.2rem;color:var(--g400);cursor:pointer;padding:4px;}
+.modal-close:hover{color:var(--g900);}
+.modal-body{padding:22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--g200);display:flex;justify-content:flex-end;gap:8px;}
+
+/* ════ FORM ════ */
+.field{margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+label{font-size:.72rem;font-weight:700;color:var(--g700);display:block;margin-bottom:4px;}
+.input{width:100%;padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.875rem;color:var(--g900);outline:none;transition:border-color .15s;background:#fff;}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+
+/* ════ REVENUE CHART ════ */
+.rev-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 4px;}
+.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.rev-bar{width:100%;border-radius:5px 5px 0 0;background:var(--blue);transition:height .4s;}
+.rev-bar-val{font-size:.65rem;font-weight:700;color:var(--blue);}
+.rev-bar-lbl{font-size:.62rem;color:var(--g400);}
+
+/* ════ ACTIVITY FEED ════ */
+.activity-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--g100);}
+.activity-item:last-child{border-bottom:none;}
+.act-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.act-text{font-size:.8rem;color:var(--g700);line-height:1.5;flex:1;}
+.act-text strong{color:var(--g900);}
+.act-time{font-size:.68rem;color:var(--g400);margin-top:3px;}
+
+/* ════ COMMISSION ════ */
+.comm-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--g100);font-size:.82rem;}
+.comm-row:last-child{border-bottom:none;}
+.comm-tutor{display:flex;align-items:center;gap:8px;}
+.comm-amount{font-weight:800;color:var(--green);}
+.comm-status{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:100px;}
+
+/* ════ TOAST ════ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+.empty{text-align:center;padding:36px;color:var(--g400);}
+.empty .ei{font-size:2rem;margin-bottom:8px;}
+.empty .et{font-size:.83rem;}
+
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){:root{--sb-w:0px;}.sidebar{display:none;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">Ustad<span>.</span></div>
+    <div class="sb-role">Administration</div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-lbl">Tableau de bord</div>
+    <div class="sb-item on"  data-s="overview"><span class="ico">📊</span><span class="lbl">Vue d'ensemble</span></div>
+    <div class="sb-item" data-s="activity"><span class="ico">🔔</span><span class="lbl">Activité récente</span><span class="sb-n">5</span></div>
+
+    <div class="sb-lbl">Gestion</div>
+    <div class="sb-item" data-s="tutors"><span class="ico">👨‍🏫</span><span class="lbl">Tuteurs</span></div>
+    <div class="sb-item" data-s="students"><span class="ico">🎓</span><span class="lbl">Étudiants</span></div>
+    <div class="sb-item" data-s="bookings"><span class="ico">📅</span><span class="lbl">Réservations</span></div>
+    <div class="sb-item" data-s="reviews"><span class="ico">⭐</span><span class="lbl">Avis</span></div>
+
+    <div class="sb-lbl">Finance</div>
+    <div class="sb-item" data-s="revenue"><span class="ico">💰</span><span class="lbl">Revenus</span></div>
+    <div class="sb-item" data-s="commissions"><span class="ico">📈</span><span class="lbl">Commissions</span></div>
+
+    <div class="sb-lbl">Plateforme</div>
+    <div class="sb-item" data-s="settings"><span class="ico">⚙️</span><span class="lbl">Paramètres</span></div>
+  </nav>
+
+  <div class="sb-foot">
+    <div class="sb-admin">
+      <div class="sb-av">A</div>
+      <div>
+        <div class="sb-aname">Admin Ustad</div>
+        <div class="sb-arole">Super administrateur</div>
+      </div>
+    </div>
+    <button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:.8rem;font-weight:500;color:rgba(255,255,255,.35);transition:all .15s;width:100%;" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.35)'" onclick="logout()">
+      <span>🚪</span> Déconnexion
+    </button>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Vue d'ensemble</div>
+    <div class="topbar-right">
+      <div style="font-size:.78rem;color:var(--g400);" id="topbar-date"></div>
+      <button class="btn btn-primary btn-sm" onclick="showModal('add-user-modal')">+ Ajouter un utilisateur</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ════ OVERVIEW ════ -->
+    <div id="s-overview">
+      <div class="stats-grid">
+        <div class="stat blue">
+          <div class="stat-icon">👨‍🏫</div>
+          <div class="stat-val" id="st-tutors">48</div>
+          <div class="stat-lbl">Tuteurs actifs</div>
+          <div class="stat-delta up">↑ +6 ce mois</div>
+        </div>
+        <div class="stat purple">
+          <div class="stat-icon">🎓</div>
+          <div class="stat-val" id="st-students">312</div>
+          <div class="stat-lbl">Étudiants inscrits</div>
+          <div class="stat-delta up">↑ +34 ce mois</div>
+        </div>
+        <div class="stat green">
+          <div class="stat-icon">💰</div>
+          <div class="stat-val" id="st-revenue">84K DH</div>
+          <div class="stat-lbl">Revenus ce mois</div>
+          <div class="stat-delta up">↑ +12% vs mois dernier</div>
+        </div>
+        <div class="stat yellow">
+          <div class="stat-icon">📅</div>
+          <div class="stat-val" id="st-sessions">1 248</div>
+          <div class="stat-lbl">Sessions ce mois</div>
+          <div class="stat-delta up">↑ +8%</div>
+        </div>
+        <div class="stat red">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-val" id="st-pending">7</div>
+          <div class="stat-lbl">En attente validation</div>
+          <div class="stat-delta dn">↑ +3 nouveaux</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;">
+
+        <!-- Revenue chart -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">💰 Revenus mensuels (DH)</div>
+              <div class="card-desc">Commission Ustad 25% · 6 derniers mois</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="rev-chart" id="rev-chart"></div>
+            <div id="rev-labels" style="display:flex;justify-content:space-around;margin-top:6px;"></div>
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔔 Activité récente</div>
+            <button class="btn btn-outline btn-sm" onclick="navigate('activity')">Tout voir</button>
+          </div>
+          <div class="card-body np" id="ov-activity"></div>
+        </div>
+
+      </div>
+
+      <!-- Pending tutors -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">⏳ Tuteurs en attente de validation</div>
+            <div class="card-desc">Ces tuteurs ont créé un profil et attendent ton approbation</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('tutors')">Voir tous les tuteurs →</button>
+        </div>
+        <div class="card-body np" id="ov-pending-tutors"></div>
+      </div>
+    </div>
+
+    <!-- ════ ACTIVITY ════ -->
+    <div id="s-activity" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔔 Toute l'activité récente</div></div>
+        <div class="card-body np" id="all-activity"></div>
+      </div>
+    </div>
+
+    <!-- ════ TUTORS ════ -->
+    <div id="s-tutors" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👨‍🏫 Tous les tuteurs</div>
+          <button class="btn btn-primary btn-sm" onclick="showModal('add-tutor-modal')">+ Ajouter un tuteur</button>
+        </div>
+        <div class="card-body" style="padding:14px 20px;">
+          <div class="filter-bar" style="margin-bottom:14px;">
+            <input class="search-input" type="text" placeholder="Rechercher un tuteur..." oninput="filterTutors(this.value)">
+            <select class="filter-select" onchange="filterTutorsByStatus(this.value)">
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="pending">En attente</option>
+              <option value="suspended">Suspendu</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table id="tutors-table">
+              <thead>
+                <tr>
+                  <th>Tuteur</th>
+                  <th>Matières</th>
+                  <th>Étudiants</th>
+                  <th>Note</th>
+                  <th>Revenus/mois</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tutors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ STUDENTS ════ -->
+    <div id="s-students" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎓 Tous les étudiants</div>
+        </div>
+        <div class="card-body" style="padding:14px 20px;">
+          <div class="filter-bar" style="margin-bottom:14px;">
+            <input class="search-input" type="text" placeholder="Rechercher un étudiant...">
+            <select class="filter-select">
+              <option>Tous les statuts</option>
+              <option>Abonnement actif</option>
+              <option>Sans abonnement</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Niveau</th>
+                  <th>Tuteur actuel</th>
+                  <th>Abonnement</th>
+                  <th>Sessions</th>
+                  <th>Inscrit le</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ BOOKINGS ════ -->
+    <div id="s-bookings" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📅 Toutes les réservations</div></div>
+        <div class="card-body" style="padding:14px 20px;">
+          <div class="filter-bar" style="margin-bottom:14px;">
+            <input class="search-input" type="text" placeholder="Rechercher...">
+            <select class="filter-select">
+              <option>Tous les statuts</option>
+              <option>En attente</option>
+              <option>Confirmé</option>
+              <option>Annulé</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Tuteur</th>
+                  <th>Formule</th>
+                  <th>Cours 1</th>
+                  <th>Cours 2</th>
+                  <th>Prix</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REVIEWS ════ -->
+    <div id="s-reviews" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">⭐ Tous les avis</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Tuteur</th>
+                  <th>Note</th>
+                  <th>Commentaire</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reviews-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REVENUE ════ -->
+    <div id="s-revenue" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div class="stat green" style="border-radius:12px;padding:18px;">
+          <div class="stat-icon">💰</div>
+          <div class="stat-val">84 000 DH</div>
+          <div class="stat-lbl">Revenus bruts ce mois</div>
+        </div>
+        <div class="stat blue" style="border-radius:12px;padding:18px;">
+          <div class="stat-icon">📊</div>
+          <div class="stat-val">21 000 DH</div>
+          <div class="stat-lbl">Commission Ustad (25%)</div>
+        </div>
+        <div class="stat yellow" style="border-radius:12px;padding:18px;">
+          <div class="stat-icon">👨‍🏫</div>
+          <div class="stat-val">63 000 DH</div>
+          <div class="stat-lbl">Payé aux tuteurs (75%)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">💰 Revenus par mois</div></div>
+        <div class="card-body">
+          <div class="rev-chart" id="rev-chart-full" style="height:160px;"></div>
+          <div id="rev-labels-full" style="display:flex;justify-content:space-around;margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏆 Top tuteurs par revenus</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Tuteur</th><th>Étudiants</th><th>Sessions</th><th>Revenu brut</th><th>Commission Ustad</th></tr></thead>
+              <tbody id="top-tutors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ COMMISSIONS ════ -->
+    <div id="s-commissions" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📈 Commissions à verser aux tuteurs</div>
+            <div class="card-desc">75% de chaque abonnement · Versement mensuel</div>
+          </div>
+          <button class="btn btn-green btn-sm">💸 Tout verser</button>
+        </div>
+        <div class="card-body np" id="commissions-list"></div>
+      </div>
+    </div>
+
+    <!-- ════ SETTINGS ════ -->
+    <div id="s-settings" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚙️ Paramètres généraux</div></div>
+          <div class="card-body">
+            <div class="field"><label>Nom de la plateforme</label><input class="input" value="Ustad"></div>
+            <div class="field"><label>Email de contact</label><input class="input" type="email" value="contact@ustad.ma"></div>
+            <div class="field"><label>Commission plateforme (%)</label><input class="input" type="number" value="25" min="0" max="50"></div>
+            <div class="field"><label>Prix minimum tuteur (DH/mois)</label><input class="input" type="number" value="300"></div>
+            <div class="field"><label>Sessions par mois</label><input class="input" type="number" value="8"></div>
+            <div class="field"><label>Durée par session</label>
+              <select class="input">
+                <option>1h00</option>
+                <option selected>1h30</option>
+                <option>2h00</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="toast('✅ Paramètres sauvegardés !')">💾 Sauvegarder</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔒 Sécurité & Accès</div></div>
+          <div class="card-body">
+            <div class="field"><label>Email admin</label><input class="input" type="email" value="admin@ustad.ma"></div>
+            <div class="field"><label>Nouveau mot de passe</label><input class="input" type="password" placeholder="••••••••"></div>
+            <div class="field"><label>Confirmer le mot de passe</label><input class="input" type="password" placeholder="••••••••"></div>
+            <button class="btn btn-primary" onclick="toast('✅ Mot de passe mis à jour !')">🔒 Mettre à jour</button>
+            <div style="margin-top:20px;padding:14px;background:var(--red-lt);border:1px solid var(--red-bd);border-radius:9px;">
+              <div style="font-size:.82rem;font-weight:700;color:var(--red);margin-bottom:8px;">⚠️ Zone dangereuse</div>
+              <div style="font-size:.75rem;color:var(--g500);margin-bottom:10px;">Réinitialiser toutes les données de test de la plateforme.</div>
+              <button class="btn btn-red btn-sm">🗑 Vider les données de test</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ════ MODALS ════ -->
+
+<!-- Add user modal -->
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Ajouter un utilisateur</div>
+      <div class="modal-close" onclick="closeModal('add-user-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Prénom</label><input class="input" placeholder="Youssef"></div>
+        <div class="field"><label>Nom</label><input class="input" placeholder="El Amrani"></div>
+      </div>
+      <div class="field"><label>Email</label><input class="input" type="email" placeholder="email@exemple.com"></div>
+      <div class="field"><label>Rôle</label>
+        <select class="input">
+          <option>Étudiant</option>
+          <option>Tuteur</option>
+        </select>
+      </div>
+      <div class="field"><label>Ville</label>
+        <select class="input">
+          <option>Casablanca</option><option>Rabat</option><option>Marrakech</option><option>Fès</option><option>Tanger</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('add-user-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="closeModal('add-user-modal');toast('✅ Utilisateur ajouté !')">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutor detail modal -->
+<div class="modal-overlay" id="tutor-detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="td-modal-title">Détails tuteur</div>
+      <div class="modal-close" onclick="closeModal('tutor-detail-modal')">✕</div>
+    </div>
+    <div class="modal-body" id="td-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('tutor-detail-modal')">Fermer</button>
+      <button class="btn btn-red" onclick="closeModal('tutor-detail-modal');toast('Tuteur suspendu.')">Suspendre</button>
+      <button class="btn btn-green" onclick="closeModal('tutor-detail-modal');toast('✅ Tuteur approuvé !')">✅ Approuver</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = 'https://phcsftysslpiiisqjwhi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoY3NmdHlzc2xwaWlpc3Fqd2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjU1ODMsImV4cCI6MjA4OTIwMTU4M30.8reYXjUdrgjLpxgsYsAfP3H0yf_wTABQHZDYWY_fS8Q';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+/* ══ DATE ══ */
+document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+/* ══ MOCK DATA ══ */
+const TUTORS = [
+  {id:1,name:'Youssef El Amrani',  av:'YA',col:'#1a56db',subjects:'Maths · Physique',students:4, rating:4.9,revenue:2400,status:'active'},
+  {id:2,name:'Fatima Zahra Benali',av:'FZ',col:'#059669',subjects:'Français · Philo',  students:3, rating:5.0,revenue:1200,status:'active'},
+  {id:3,name:'Said Ouchan',        av:'SO',col:'#d97706',subjects:'Compta · Éco',      students:2, rating:4.7,revenue: 700,status:'active'},
+  {id:4,name:'Nadia El Houssaini', av:'NH',col:'#7c3aed',subjects:'Anglais · Français',students:5, rating:4.8,revenue:1500,status:'active'},
+  {id:5,name:'Karim Tazi',         av:'KT',col:'#0891b2',subjects:'SVT · Chimie',      students:3, rating:4.9,revenue:1350,status:'active'},
+  {id:6,name:'Amine Ouazzani',     av:'AO',col:'#be123c',subjects:'Maths · Info',      students:0, rating:0,  revenue:   0,status:'pending'},
+  {id:7,name:'Hajar Bensouda',     av:'HB',col:'#0f766e',subjects:'Chimie · SVT',      students:0, rating:0,  revenue:   0,status:'pending'},
+];
+
+const STUDENTS = [
+  {name:'Sara Amrani',    av:'SA',col:'#7c3aed',level:'2ème Bac SM',tutor:'Youssef El Amrani',   sub:'600 DH/mois',sessions:6,  date:'10 Jan 2025'},
+  {name:'Karim Moussaoui',av:'KM',col:'#0891b2',level:'1ère Bac SP',tutor:'Youssef El Amrani',   sub:'600 DH/mois',sessions:8,  date:'15 Jan 2025'},
+  {name:'Leila Benkirane',av:'LB',col:'#db2777',level:'Lycée LSH',  tutor:'Fatima Z. Benali',    sub:'400 DH/mois',sessions:5,  date:'20 Jan 2025'},
+  {name:'Amine Tazi',     av:'AT',col:'#059669',level:'Tronc Commun',tutor:'Youssef El Amrani',  sub:'600 DH/mois',sessions:3,  date:'01 Fév 2025'},
+  {name:'Nadia Ouhbi',    av:'NO',col:'#d97706',level:'2ème Bac SVT',tutor:'Karim Tazi',         sub:'450 DH/mois',sessions:5,  date:'05 Fév 2025'},
+  {name:'Omar Alami',     av:'OA',col:'#6d28d9',level:'Collège 3ème',tutor:'Nadia El Houssaini', sub:'300 DH/mois',sessions:7,  date:'10 Fév 2025'},
+];
+
+const BOOKINGS = [
+  {student:'Sara Amrani',   tutor:'Youssef El Amrani',   type:'Solo',   c1:'Mar 19:00',c2:'Sam 14:00',price:'600 DH',status:'confirmed'},
+  {student:'Karim Moussaoui',tutor:'Youssef El Amrani',  type:'Classe×3',c1:'Mer 20:30',c2:'Dim 15:30',price:'350 DH',status:'confirmed'},
+  {student:'Leila Benkirane',tutor:'Fatima Z. Benali',   type:'Solo',   c1:'Jeu 20:30',c2:'Ven 20:30',price:'400 DH',status:'confirmed'},
+  {student:'Amine Ouazzani', tutor:'En attente',         type:'Solo',   c1:'Lun 19:00',c2:'Sam 11:00',price:'500 DH',status:'pending'},
+  {student:'Hajar Bensouda', tutor:'En attente',         type:'Classe×5',c1:'Mar 22:00',c2:'Dim 14:00',price:'220 DH',status:'pending'},
+];
+
+const REVIEWS = [
+  {student:'Sara Amrani',   tutor:'Youssef El Amrani',  rating:5, comment:'Excellent tuteur, très pédagogue !',           date:'15 Mar 2025'},
+  {student:'Karim Moussaoui',tutor:'Youssef El Amrani', rating:5, comment:'Explications très claires, je recommande.',    date:'12 Mar 2025'},
+  {student:'Leila Benkirane',tutor:'Fatima Z. Benali',  rating:5, comment:'Super prof, ma note a vraiment progressé.',    date:'10 Mar 2025'},
+  {student:'Omar Alami',    tutor:'Nadia El Houssaini', rating:4, comment:'Bien, mais parfois un peu rapide.',             date:'08 Mar 2025'},
+];
+
+const ACTIVITY = [
+  {icon:'👨‍🏫',bg:'#eff6ff',text:'<strong>Amine Ouazzani</strong> a créé un profil tuteur',       time:'Il y a 2h'},
+  {icon:'🎓',bg:'#f5f3ff',text:'<strong>Sara Amrani</strong> s\'est inscrite comme étudiante',    time:'Il y a 3h'},
+  {icon:'📅',bg:'#f0fdf4',text:'Réservation confirmée : <strong>Karim Moussaoui</strong> ↔ <strong>Youssef</strong>', time:'Il y a 5h'},
+  {icon:'⭐',bg:'#fef9c3',text:'Nouvel avis 5★ de <strong>Leila Benkirane</strong>',              time:'Hier 18:32'},
+  {icon:'💰',bg:'#f0fdf4',text:'Paiement reçu : <strong>600 DH</strong> — Sara Amrani',           time:'Hier 14:00'},
+  {icon:'👨‍🏫',bg:'#eff6ff',text:'<strong>Hajar Bensouda</strong> a créé un profil tuteur',        time:'Hier 10:15'},
+  {icon:'🎓',bg:'#f5f3ff',text:'<strong>Omar Alami</strong> s\'est inscrit comme étudiant',       time:'Il y a 2j'},
+];
+
+const REV_DATA = [
+  {month:'Oct',val:52000},{month:'Nov',val:61000},{month:'Déc',val:58000},
+  {month:'Jan',val:72000},{month:'Fév',val:76000},{month:'Mar',val:84000},
+];
+
+/* ══ INIT ══ */
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  // For demo, we allow access — in production check admin role
+  buildAll();
+})();
+
+function buildAll() {
+  buildRevChart('rev-chart','rev-labels',100);
+  buildRevChart('rev-chart-full','rev-labels-full',140);
+  buildActivity();
+  buildPendingTutors();
+  buildTutorsTable(TUTORS);
+  buildStudentsTable();
+  buildBookingsTable();
+  buildReviewsTable();
+  buildTopTutors();
+  buildCommissions();
+}
+
+/* ══ REVENUE CHART ══ */
+function buildRevChart(chartId, labelsId, maxH) {
+  const maxVal = Math.max(...REV_DATA.map(r=>r.val));
+  document.getElementById(chartId).innerHTML = REV_DATA.map(r => {
+    const h = Math.round(r.val/maxVal*maxH);
+    const commission = Math.round(r.val*0.25/1000);
+    return `<div class="rev-bar-wrap">
+      <div class="rev-bar-val">${commission}K</div>
+      <div class="rev-bar" style="height:${h}px" title="${r.val.toLocaleString()} DH"></div>
+    </div>`;
+  }).join('');
+  document.getElementById(labelsId).innerHTML = REV_DATA.map(r =>
+    `<span style="font-size:.62rem;color:var(--g400);flex:1;text-align:center">${r.month}</span>`
+  ).join('');
+}
+
+/* ══ ACTIVITY ══ */
+function buildActivity() {
+  const html = ACTIVITY.slice(0,4).map(a => `
+    <div class="activity-item">
+      <div class="act-icon" style="background:${a.bg}">${a.icon}</div>
+      <div><div class="act-text">${a.text}</div><div class="act-time">${a.time}</div></div>
+    </div>`).join('');
+  document.getElementById('ov-activity').innerHTML = `<div style="padding:12px 16px">${html}</div>`;
+  document.getElementById('all-activity').innerHTML = `<div style="padding:12px 16px">` +
+    ACTIVITY.map(a => `
+      <div class="activity-item">
+        <div class="act-icon" style="background:${a.bg}">${a.icon}</div>
+        <div><div class="act-text">${a.text}</div><div class="act-time">${a.time}</div></div>
+      </div>`).join('') + `</div>`;
+}
+
+/* ══ PENDING TUTORS ══ */
+function buildPendingTutors() {
+  const pending = TUTORS.filter(t => t.status === 'pending');
+  if (!pending.length) {
+    document.getElementById('ov-pending-tutors').innerHTML = '<div class="empty"><div class="ei">✅</div><div class="et">Aucun tuteur en attente</div></div>';
+    return;
+  }
+  document.getElementById('ov-pending-tutors').innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Tuteur</th><th>Matières</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+    <tbody>${pending.map(t => `<tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${t.col}">${t.av}</div>
+        <div class="td-name">${t.name}</div>
+      </div></td>
+      <td>${t.subjects}</td>
+      <td style="color:var(--g400);font-size:.78rem">Il y a 2 jours</td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs" onclick="viewTutor(${t.id})">👁 Voir</button>
+        <button class="btn btn-green btn-xs" onclick="approveTutor(this,'${t.name}')">✅ Approuver</button>
+        <button class="btn btn-red btn-xs" onclick="rejectTutor(this,'${t.name}')">✕ Refuser</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ══ TUTORS TABLE ══ */
+function buildTutorsTable(data) {
+  document.getElementById('tutors-tbody').innerHTML = data.map(t => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${t.col}">${t.av}</div>
+        <div>
+          <div class="td-name">${t.name}</div>
+          <div style="font-size:.7rem;color:var(--g400)">${t.subjects}</div>
+        </div>
+      </div></td>
+      <td style="font-size:.78rem">${t.subjects}</td>
+      <td style="font-weight:700">${t.students}</td>
+      <td>${t.rating > 0 ? `<span style="color:var(--yellow)">★</span> ${t.rating}` : '—'}</td>
+      <td style="font-weight:700;color:var(--green)">${t.revenue > 0 ? t.revenue.toLocaleString()+' DH' : '—'}</td>
+      <td><span class="badge ${t.status==='active'?'b-active':t.status==='pending'?'b-pending':'b-suspended'}">${t.status==='active'?'✅ Actif':t.status==='pending'?'⏳ En attente':'🚫 Suspendu'}</span></td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs" onclick="viewTutor(${t.id})">👁 Voir</button>
+        ${t.status==='pending'?`<button class="btn btn-green btn-xs" onclick="approveTutor(this,'${t.name}')">Approuver</button>`:''}
+        ${t.status==='active'?`<button class="btn btn-red btn-xs" onclick="suspendTutor(this,'${t.name}')">Suspendre</button>`:''}
+      </div></td>
+    </tr>`).join('');
+}
+
+function filterTutors(q) {
+  const filtered = TUTORS.filter(t => t.name.toLowerCase().includes(q.toLowerCase()) || t.subjects.toLowerCase().includes(q.toLowerCase()));
+  buildTutorsTable(filtered);
+}
+function filterTutorsByStatus(s) {
+  const filtered = s ? TUTORS.filter(t=>t.status===s) : TUTORS;
+  buildTutorsTable(filtered);
+}
+
+/* ══ STUDENTS TABLE ══ */
+function buildStudentsTable() {
+  document.getElementById('students-tbody').innerHTML = STUDENTS.map(s => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${s.col}">${s.av}</div>
+        <div class="td-name">${s.name}</div>
+      </div></td>
+      <td style="font-size:.78rem">${s.level}</td>
+      <td style="font-size:.78rem">${s.tutor}</td>
+      <td><span class="badge b-active">${s.sub}</span></td>
+      <td style="font-weight:700">${s.sessions}/8</td>
+      <td style="font-size:.75rem;color:var(--g400)">${s.date}</td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs">👁 Voir</button>
+        <button class="btn btn-red btn-xs" onclick="toast('Compte suspendu.')">Suspendre</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+/* ══ BOOKINGS TABLE ══ */
+function buildBookingsTable() {
+  document.getElementById('bookings-tbody').innerHTML = BOOKINGS.map(b => `
+    <tr>
+      <td class="td-name">${b.student}</td>
+      <td style="font-size:.78rem">${b.tutor}</td>
+      <td><span class="badge ${b.type.includes('×')?'b-tutor':'b-student'}">${b.type}</span></td>
+      <td style="font-size:.78rem">${b.c1}</td>
+      <td style="font-size:.78rem">${b.c2}</td>
+      <td style="font-weight:700;color:var(--green)">${b.price}</td>
+      <td><span class="badge ${b.status==='confirmed'?'b-confirmed':b.status==='pending'?'b-waiting':'b-cancelled'}">${b.status==='confirmed'?'✅ Confirmé':b.status==='pending'?'⏳ En attente':'❌ Annulé'}</span></td>
+      <td><div class="actions">
+        ${b.status==='pending'?`<button class="btn btn-green btn-xs" onclick="toast('✅ Réservation confirmée !')">Confirmer</button>`:''}
+        <button class="btn btn-red btn-xs" onclick="toast('Réservation annulée.')">Annuler</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+/* ══ REVIEWS TABLE ══ */
+function buildReviewsTable() {
+  document.getElementById('reviews-tbody').innerHTML = REVIEWS.map(r => `
+    <tr>
+      <td class="td-name">${r.student}</td>
+      <td style="font-size:.78rem">${r.tutor}</td>
+      <td><span style="color:var(--yellow)">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span> ${r.rating}/5</td>
+      <td style="font-size:.78rem;max-width:220px;color:var(--g500)">${r.comment}</td>
+      <td style="font-size:.75rem;color:var(--g400)">${r.date}</td>
+      <td><button class="btn btn-red btn-xs" onclick="toast('Avis supprimé.')">🗑 Supprimer</button></td>
+    </tr>`).join('');
+}
+
+/* ══ TOP TUTORS ══ */
+function buildTopTutors() {
+  const sorted = [...TUTORS].filter(t=>t.revenue>0).sort((a,b)=>b.revenue-a.revenue);
+  document.getElementById('top-tutors-tbody').innerHTML = sorted.map((t,i) => `
+    <tr>
+      <td style="font-weight:800;color:var(--g400)">#${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${t.col}">${t.av}</div>
+        <div class="td-name">${t.name}</div>
+      </div></td>
+      <td style="font-weight:700">${t.students}</td>
+      <td style="font-weight:700">${t.students*8}</td>
+      <td style="font-weight:800;color:var(--g900)">${t.revenue.toLocaleString()} DH</td>
+      <td style="font-weight:700;color:var(--blue)">${Math.round(t.revenue*0.25).toLocaleString()} DH</td>
+    </tr>`).join('');
+}
+
+/* ══ COMMISSIONS ══ */
+function buildCommissions() {
+  document.getElementById('commissions-list').innerHTML = `<div style="padding:0 20px">` +
+    TUTORS.filter(t=>t.revenue>0).map(t => `
+      <div class="comm-row">
+        <div class="comm-tutor">
+          <div class="u-av" style="background:${t.col}">${t.av}</div>
+          <div>
+            <div style="font-weight:700;font-size:.85rem">${t.name}</div>
+            <div style="font-size:.72rem;color:var(--g400)">${t.students} étudiant(s) · ${t.students*8} sessions</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="text-align:right">
+            <div style="font-size:.72rem;color:var(--g400)">À verser (75%)</div>
+            <div class="comm-amount">${Math.round(t.revenue*0.75).toLocaleString()} DH</div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="toast('💸 Virement effectué vers ${t.name} !')">💸 Verser</button>
+        </div>
+      </div>`).join('') + `</div>`;
+}
+
+/* ══ TUTOR ACTIONS ══ */
+function viewTutor(id) {
+  const t = TUTORS.find(t=>t.id===id);
+  if (!t) return;
+  document.getElementById('td-modal-title').textContent = t.name;
+  document.getElementById('td-modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--g200)">
+      <div class="u-av" style="background:${t.col};width:52px;height:52px;font-size:1.1rem">${t.av}</div>
+      <div>
+        <div style="font-size:1.05rem;font-weight:800;color:var(--g900)">${t.name}</div>
+        <div style="font-size:.82rem;color:var(--g400);margin-top:2px">${t.subjects}</div>
+        <span class="badge ${t.status==='active'?'b-active':'b-pending'}" style="margin-top:6px;display:inline-flex">${t.status==='active'?'✅ Actif':'⏳ En attente'}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:900;color:var(--g900)">${t.students}</div>
+        <div style="font-size:.7rem;color:var(--g400)">Étudiants</div>
+      </div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:900;color:var(--g900)">${t.rating||'—'}</div>
+        <div style="font-size:.7rem;color:var(--g400)">Note moyenne</div>
+      </div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:900;color:var(--green)">${t.revenue?t.revenue.toLocaleString()+' DH':'—'}</div>
+        <div style="font-size:.7rem;color:var(--g400)">Revenus/mois</div>
+      </div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:900;color:var(--blue)">${t.revenue?Math.round(t.revenue*.25).toLocaleString()+' DH':'—'}</div>
+        <div style="font-size:.7rem;color:var(--g400)">Commission Ustad</div>
+      </div>
+    </div>`;
+  showModal('tutor-detail-modal');
+}
+
+function approveTutor(btn, name) {
+  btn.closest('tr').querySelector('.badge').className = 'badge b-active';
+  btn.closest('tr').querySelector('.badge').textContent = '✅ Actif';
+  btn.closest('.actions').innerHTML = '<button class="btn btn-red btn-xs">Suspendre</button>';
+  document.getElementById('st-pending').textContent = Math.max(0, parseInt(document.getElementById('st-pending').textContent)-1);
+  toast(`✅ ${name} a été approuvé !`);
+}
+
+function rejectTutor(btn, name) {
+  btn.closest('tr').remove();
+  toast(`Tuteur ${name} refusé.`);
+}
+
+function suspendTutor(btn, name) {
+  btn.closest('tr').querySelector('.badge').className = 'badge b-suspended';
+  btn.closest('tr').querySelector('.badge').textContent = '🚫 Suspendu';
+  btn.remove();
+  toast(`Tuteur ${name} suspendu.`);
+}
+
+/* ══ MODAL ══ */
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+/* ══ NAV ══ */
+const TITLES = {
+  overview:'Vue d\'ensemble',activity:'Activité récente',
+  tutors:'Tuteurs',students:'Étudiants',bookings:'Réservations',reviews:'Avis',
+  revenue:'Revenus',commissions:'Commissions',settings:'Paramètres'
+};
+
+function navigate(section) {
+  Object.keys(TITLES).forEach(k => {
+    const el = document.getElementById(`s-${k}`);
+    if(el) el.style.display = k===section?'block':'none';
+  });
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('on',i.dataset.s===section));
+  document.getElementById('page-title').textContent = TITLES[section]||section;
+}
+
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>navigate(i.dataset.s)));
+
+/* ══ TOAST ══ */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  location.href = 'auth.html';
+}
+</script>
+</body>
+</html>
