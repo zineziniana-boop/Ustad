@@ -1,0 +1,346 @@
+# USTAD — Guide de connexion Supabase
+# Lis ce fichier avant de modifier quoi que ce soit
+
+## ÉTAPE 1 — Ajoute supabase.js à chaque page HTML
+
+Dans chaque fichier HTML, remplace la ligne :
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+Par ces DEUX lignes (dans cet ordre) :
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+
+Fichiers concernés :
+  - index.html
+  - auth.html
+  - tutor-profile.html
+  - dashboard-tutor.html
+  - dashboard-student.html
+  - dashboard-admin.html
+
+
+## ÉTAPE 2 — Remplacements page par page
+
+=========================================
+INDEX.HTML — Afficher les vrais tuteurs
+=========================================
+
+Remplace la fonction qui génère les cartes tuteurs par :
+
+  async function loadTutors() {
+    const tutors = await getTutors({ limit: 8 });
+    const grid = document.getElementById('tutors-grid');
+    if (!tutors.length) {
+      grid.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:40px">Aucun tuteur disponible pour l\'instant.</div>';
+      return;
+    }
+    grid.innerHTML = tutors.map(t => `
+      <div class="tcard" onclick="window.location.href='tutor-profile.html?id=${t.id}'">
+        <div class="online-badge"><span class="online-dot"></span>En ligne</div>
+        <div class="av-wrap">
+          <div class="av" style="background:linear-gradient(135deg,#1a56db,#60a5fa)">
+            ${t.profile?.avatar_url
+              ? `<img src="${t.profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+              : getInitials(t.profile?.full_name)}
+          </div>
+          ${t.rating_count > 20 ? '<span class="super-tag">★ Super tuteur</span>' : ''}
+        </div>
+        <div class="tc-name">${t.profile?.full_name || 'Tuteur'}</div>
+        <div class="tc-subject">${(t.subjects || []).slice(0,2).join(' · ')}</div>
+        <div class="tc-level">${(t.levels || []).slice(0,2).join(' · ')}</div>
+        <div class="tc-rating">
+          <span class="stars">${'★'.repeat(Math.round(t.rating_avg || 0))}${'☆'.repeat(5-Math.round(t.rating_avg||0))}</span>
+          <span class="rn">${t.rating_avg || '—'}</span>
+          <span class="rc">(${t.rating_count || 0} avis)</span>
+        </div>
+        <div class="tc-divider"></div>
+        <div class="tc-footer">
+          <div>
+            <div class="tc-price">${formatPrice(t.price_solo)} <span>/mois</span></div>
+            <div class="tc-price-sub">8 sessions · 1h30</div>
+          </div>
+          <button class="tc-btn">Voir profil</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Appelle loadTutors() au chargement de la page
+  loadTutors();
+
+  // Branche le bouton de recherche
+  document.querySelector('.search-btn').addEventListener('click', async () => {
+    const level   = document.getElementById('sel-level').value;
+    const subject = document.getElementById('sel-subject').value;
+    const price   = document.getElementById('sel-price').value;
+    const tutors  = await getTutors({
+      subject: subject || undefined,
+      level:   level   || undefined,
+      maxPrice: price  ? parseInt(price) : undefined,
+    });
+    // Re-render avec les résultats filtrés
+    loadTutors(); // ou passe les paramètres
+  });
+
+
+=========================================
+AUTH.HTML — Redirection après connexion
+=========================================
+
+La fonction login() redirige déjà selon le rôle.
+Vérifie que redirectByRole() est appelé après signIn :
+
+  // Remplace la fin de la fonction login() par :
+  const profile = await getCurrentProfile();
+  if (profile?.role === 'tutor')   window.location.href = 'dashboard-tutor.html';
+  else if (profile?.role === 'student') window.location.href = 'dashboard-student.html';
+  else window.location.href = 'index.html';
+
+
+=========================================
+TUTOR-PROFILE.HTML — Afficher un vrai tuteur
+=========================================
+
+Au chargement de la page, récupère l'ID depuis l'URL :
+
+  const params   = new URLSearchParams(window.location.search);
+  const tutorId  = params.get('id');
+
+  if (tutorId) {
+    const tutor = await getTutorById(tutorId);
+    if (tutor) {
+      // Remplis les infos
+      document.querySelector('.ph-name').textContent   = tutor.profile?.full_name || '';
+      document.querySelector('.ph-sub').textContent    = tutor.tagline || '';
+      document.getElementById('f-bio').textContent     = tutor.bio || '';
+      document.getElementById('bc-price-main').innerHTML = formatPrice(tutor.price_solo) + ' <span>/mois</span>';
+
+      // Remplis les offres
+      // ...
+
+      // Charge les avis
+      const reviews = await getTutorReviews(tutorId);
+      // Render reviews...
+
+      // Branche le bouton réserver
+      document.querySelector('.btn-book').addEventListener('click', async () => {
+        const session = await getSession();
+        if (!session) { window.location.href = 'auth.html'; return; }
+        await createBooking({
+          studentId:    session.user.id,
+          tutorId:      tutorId,
+          offerType:    currentOfferSize === 1 ? 'solo' : `class${currentOfferSize}`,
+          c1Day:        sel.c1?.label.split(' ')[0],
+          c1Hour:       sel.c1?.label.split(' ')[1],
+          c2Day:        sel.c2?.label.split(' ')[0],
+          c2Hour:       sel.c2?.label.split(' ')[1],
+          monthlyPrice: parseInt(activeOffer?.dataset.price),
+        });
+        showToast('✅ Demande envoyée ! Le tuteur confirmera sous 24h.');
+      });
+    }
+  }
+
+
+=========================================
+DASHBOARD-TUTOR.HTML — Vraies données
+=========================================
+
+Remplace la fonction loadMockData() par :
+
+  async function loadRealData() {
+    const session = await requireAuth();
+    if (!session) return;
+
+    // Profil
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+    const { data: tutor }   = await sb.from('tutors').select('*').eq('id', session.user.id).single();
+    fillProfile(profile, tutor);
+    fillPricing(tutor);
+
+    // Réservations
+    const bookings = await getTutorBookings(session.user.id);
+    const pending   = bookings.filter(b => b.status === 'pending');
+    const confirmed = bookings.filter(b => b.status === 'confirmed');
+
+    document.getElementById('res-pending').innerHTML   = pending.length
+      ? pending.map(b => bookingHTML(b, true)).join('')
+      : '<div class="empty-state"><div class="ei">📭</div><div class="et">Aucune réservation en attente</div></div>';
+
+    document.getElementById('res-confirmed').innerHTML = confirmed.length
+      ? confirmed.map(b => bookingHTML(b, false)).join('')
+      : '<div class="empty-state"><div class="ei">✅</div><div class="et">Aucune réservation confirmée</div></div>';
+
+    // Badge
+    document.getElementById('notif-res').textContent = pending.length || '';
+
+    // Stats
+    const monthlyRevenue = confirmed.reduce((s,b) => s + (b.monthly_price||0), 0);
+    document.getElementById('ov-revenue').textContent   = formatPrice(monthlyRevenue);
+    document.getElementById('ov-students').textContent  = confirmed.length;
+    document.getElementById('ov-sessions').textContent  = confirmed.length * 8;
+
+    // Écoute les nouvelles réservations en temps réel
+    listenToBookings(session.user.id, (newBooking) => {
+      showToast('🔔 Nouvelle demande de réservation !');
+      loadRealData(); // Recharge les données
+    });
+  }
+
+  function bookingHTML(b, showActions) {
+    return `<div class="res-item" data-id="${b.id}">
+      <div class="res-av" style="background:#1a56db">
+        ${getInitials(b.student?.full_name)}
+      </div>
+      <div class="res-info">
+        <div class="res-name">${b.student?.full_name || 'Étudiant'}</div>
+        <div class="res-detail">
+          <span>${b.offer_type === 'solo' ? '👤 Solo' : '👥 Classe'}</span>
+          <span>📅 ${b.c1_day} ${b.c1_hour}</span>
+          <span>📅 ${b.c2_day} ${b.c2_hour}</span>
+        </div>
+      </div>
+      ${showActions ? `<div class="res-actions">
+        <button class="btn btn-green btn-sm" onclick="doConfirm('${b.id}',this)">Confirmer</button>
+        <button class="btn btn-red-soft btn-sm" onclick="doCancel('${b.id}',this)">Refuser</button>
+      </div>` : '<span class="res-tag tag-confirmed">✅ Confirmé</span>'}
+    </div>`;
+  }
+
+  async function doConfirm(id, btn) {
+    await confirmBooking(id);
+    btn.closest('.res-item').querySelector('.res-actions').remove();
+    showToast('✅ Réservation confirmée !');
+  }
+
+  async function doCancel(id, btn) {
+    await cancelBooking(id);
+    btn.closest('.res-item').remove();
+    showToast('Réservation refusée.');
+  }
+
+
+=========================================
+DASHBOARD-STUDENT.HTML — Vraies données
+=========================================
+
+Remplace l'IIFE d'initialisation par :
+
+  (async () => {
+    const session = await requireAuth();
+    if (!session) return;
+
+    const { profile, booking } = await getStudentData(session.user.id);
+    if (!profile) return;
+
+    // Infos sidebar
+    document.getElementById('sb-initials').textContent = getInitials(profile.full_name);
+    document.getElementById('sb-name').textContent     = profile.full_name;
+
+    // Formulaire paramètres
+    document.getElementById('s-fname').value = profile.full_name?.split(' ')[0] || '';
+    document.getElementById('s-lname').value = profile.full_name?.split(' ').slice(1).join(' ') || '';
+    document.getElementById('s-email').value = profile.email || '';
+    document.getElementById('s-phone').value = profile.phone || '';
+
+    // Abonnement actif
+    if (booking) {
+      document.querySelector('.sub-name').textContent   = `${booking.offer_type === 'solo' ? 'Cours solo' : 'Classe'} · ${booking.tutor?.profile?.full_name}`;
+      document.querySelector('.sub-amount').textContent = booking.monthly_price;
+    }
+
+    // Charge les sessions
+    const bookings = await getStudentBookings(session.user.id);
+    // Render...
+  })();
+
+
+=========================================
+DASHBOARD-ADMIN.HTML — Vraies données
+=========================================
+
+Remplace buildAll() par :
+
+  async function loadAdminData() {
+    // Stats réelles
+    const stats = await adminGetStats();
+    document.getElementById('st-tutors').textContent   = stats.totalTutors;
+    document.getElementById('st-students').textContent = stats.totalStudents;
+    document.getElementById('st-revenue').textContent  = formatPrice(stats.commission) + ' comm.';
+    document.getElementById('st-pending').textContent  = stats.pendingTutors;
+
+    // Tuteurs
+    const tutors = await adminGetTutors();
+    buildTutorsTable(tutors);
+
+    // Étudiants
+    const students = await adminGetStudents();
+    // buildStudentsTable(students);
+
+    // Réservations
+    const bookings = await adminGetBookings();
+    // buildBookingsTable(bookings);
+  }
+
+  loadAdminData();
+
+
+## ÉTAPE 3 — Storage Supabase pour les photos
+
+Dans Supabase → Storage → Create bucket → Nom : "avatars" → Public : OUI
+
+Ensuite dans le formulaire de photo :
+  document.getElementById('av-file').addEventListener('change', async (e) => {
+    const file    = e.target.files[0];
+    const session = await getSession();
+    const url     = await uploadAvatar(session.user.id, file);
+    document.getElementById('av-preview-big').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    showToast('✅ Photo mise à jour !');
+  });
+
+
+## RÉSUMÉ DES FONCTIONS DISPONIBLES
+
+Auth :
+  getSession()                    → session active
+  getCurrentProfile()             → profil utilisateur
+  requireAuth()                   → redirige si non connecté
+  redirectByRole()                → redirige selon rôle
+  logout()                        → déconnexion
+
+Tuteurs :
+  getTutors({ subject, level, maxPrice, limit })
+  getTutorById(id)
+  getTutorReviews(tutorId, limit)
+  updateTutorProfile(tutorId, updates)
+
+Réservations :
+  createBooking({ studentId, tutorId, offerType, ... })
+  getTutorBookings(tutorId)
+  getStudentBookings(studentId)
+  confirmBooking(bookingId)
+  cancelBooking(bookingId)
+
+Avis :
+  createReview({ bookingId, studentId, tutorId, rating, comment })
+
+Profils :
+  updateProfile(userId, updates)
+  uploadAvatar(userId, file)
+
+Admin :
+  adminGetTutors()
+  adminGetStudents()
+  adminGetBookings()
+  adminApproveTutor(tutorId)
+  adminSuspendTutor(tutorId)
+  adminGetStats()
+
+Realtime :
+  listenToBookings(tutorId, callback)
+  listenToMessages(userId, callback)
+
+Utils :
+  formatPrice(amount)             → "1 200 DH"
+  formatDate(dateStr)             → "15 mars 2025"
+  getInitials(fullName)           → "YA"
+  showToast(msg, duration)        → notification
