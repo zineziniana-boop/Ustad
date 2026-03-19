@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profil Tuteur — Ustad</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:#f9fafb;color:#111827;font-size:15px;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;background:none;}
+:root{
+  --navy:#0d1f3c;--blue:#1a56db;--blue-dk:#1344b8;--blue-lt:#eff6ff;--blue-bd:#bfdbfe;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;
+  --yellow:#f59e0b;--green:#16a34a;--green-lt:#f0fdf4;--green-bd:#bbf7d0;
+  --rad:10px;--sh:0 1px 4px rgba(0,0,0,.08);--sh-hover:0 4px 20px rgba(0,0,0,.12);
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeup{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* NAV */
+.nav-wrap{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid var(--g200);}
+.nav{max-width:1280px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.logo{font-size:1.5rem;font-weight:900;color:var(--navy);letter-spacing:-.03em;}
+.logo span{color:var(--blue);}
+.nav-links{display:flex;gap:4px;}
+.nav-links a{font-size:.875rem;font-weight:500;color:var(--g700);padding:7px 12px;border-radius:8px;transition:background .15s;}
+.nav-links a:hover{background:var(--g100);}
+.nav-btns{display:flex;gap:8px;}
+.btn-out{font-size:.875rem;font-weight:600;color:var(--g700);padding:8px 16px;border-radius:8px;border:1.5px solid var(--g200);transition:all .15s;}
+.btn-out:hover{border-color:var(--g700);}
+.btn-fill{font-size:.875rem;font-weight:700;color:#fff;background:var(--blue);padding:9px 20px;border-radius:8px;transition:background .15s;}
+.btn-fill:hover{background:var(--blue-dk);}
+
+/* BREADCRUMB */
+.bc-wrap{background:#fff;border-bottom:1px solid var(--g200);}
+.bc{max-width:1280px;margin:0 auto;padding:11px 24px;display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--g400);}
+.bc a{color:var(--g500);transition:color .15s;}
+.bc a:hover{color:var(--blue);}
+
+/* LAYOUT */
+.page{max-width:1280px;margin:0 auto;padding:28px 24px 80px;display:grid;grid-template-columns:1fr 352px;gap:28px;align-items:start;}
+@media(max-width:960px){.page{grid-template-columns:1fr;}}
+
+/* CARDS */
+.card{background:#fff;border:1.5px solid var(--g200);border-radius:14px;margin-bottom:16px;}
+
+/* PROFILE HEADER */
+.ph{padding:24px;}
+.ph-top{display:flex;gap:18px;margin-bottom:20px;}
+.av-wrap{position:relative;flex-shrink:0;}
+.av{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#60a5fa);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:#fff;border:3px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.15);overflow:hidden;}
+.av img{width:100%;height:100%;object-fit:cover;}
+.av-online{position:absolute;bottom:4px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--green);border:2.5px solid #fff;}
+.ph-info{flex:1;}
+.ph-name{font-size:1.4rem;font-weight:800;color:var(--g900);letter-spacing:-.02em;margin-bottom:3px;}
+.ph-sub{font-size:.85rem;color:var(--g500);margin-bottom:10px;}
+.badges{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:100px;}
+.b-super{background:#fef3c7;color:#92400e;}
+.b-verif{background:var(--green-lt);color:#15803d;}
+.b-online{background:var(--green-lt);color:var(--green);}
+.ph-meta{display:flex;flex-wrap:wrap;gap:14px;}
+.meta-item{font-size:.78rem;color:var(--g500);display:flex;align-items:center;gap:5px;}
+
+/* RATINGS */
+.rating-row{display:flex;gap:20px;align-items:center;padding:18px 24px;border-top:1px solid var(--g200);border-bottom:1px solid var(--g200);flex-wrap:wrap;}
+.r-big{text-align:center;min-width:70px;}
+.r-num{font-size:2.6rem;font-weight:900;color:var(--g900);line-height:1;letter-spacing:-.04em;}
+.r-stars{color:var(--yellow);font-size:1rem;margin-top:3px;}
+.r-ct{font-size:.72rem;color:var(--g400);margin-top:2px;}
+.r-bars{flex:1;min-width:160px;}
+.r-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.r-bar-lbl{font-size:.7rem;font-weight:600;color:var(--g500);width:28px;text-align:right;flex-shrink:0;}
+.r-bar-track{flex:1;height:6px;background:var(--g100);border-radius:100px;overflow:hidden;}
+.r-bar-fill{height:100%;border-radius:100px;background:var(--yellow);}
+.r-bar-pct{font-size:.7rem;color:var(--g400);width:26px;flex-shrink:0;}
+.r-stats{display:flex;gap:10px;}
+.r-stat{text-align:center;padding:10px 14px;background:var(--g50);border-radius:9px;min-width:80px;}
+.r-stat-n{font-size:1.2rem;font-weight:900;color:var(--g900);line-height:1;}
+.r-stat-l{font-size:.65rem;color:var(--g400);margin-top:3px;}
+
+/* TABS */
+.tabs{display:flex;padding:0 24px;border-bottom:2px solid var(--g200);}
+.tab{font-size:.875rem;font-weight:600;color:var(--g500);padding:13px 16px;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--g900);}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);}
+.tab-body{padding:22px 24px;}
+.about-txt{font-size:.875rem;color:var(--g500);line-height:1.8;}
+.about-txt p+p{margin-top:10px;}
+.read-more-btn{color:var(--blue);font-size:.82rem;font-weight:600;margin-top:10px;cursor:pointer;}
+.tag-group{margin-bottom:18px;}
+.tag-group-lbl{font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.09em;margin-bottom:9px;}
+.tags{display:flex;flex-wrap:wrap;gap:7px;}
+.tag{font-size:.78rem;font-weight:600;padding:5px 13px;border-radius:7px;}
+.tag-blue{background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);}
+.tag-gray{background:var(--g100);color:var(--g700);border:1px solid var(--g200);}
+.reviews{display:flex;flex-direction:column;gap:20px;}
+.rev{padding-bottom:20px;border-bottom:1px solid var(--g200);}
+.rev:last-child{border-bottom:none;padding-bottom:0;}
+.rev-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.rev-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;}
+.rev-name{font-size:.85rem;font-weight:700;color:var(--g900);}
+.rev-date{font-size:.72rem;color:var(--g400);margin-top:1px;}
+.rev-stars{color:var(--yellow);font-size:.78rem;margin-left:auto;}
+.rev-txt{font-size:.83rem;color:var(--g500);line-height:1.7;}
+.rev-tag{display:inline-block;background:var(--blue-lt);color:var(--blue);border-radius:5px;padding:2px 8px;font-size:.68rem;font-weight:700;margin-top:7px;}
+.see-all-btn{width:100%;margin-top:14px;padding:10px;border-radius:9px;border:1.5px solid var(--g200);font-size:.85rem;font-weight:600;color:var(--g700);transition:all .15s;}
+.see-all-btn:hover{border-color:var(--blue);color:var(--blue);}
+.exp-list{display:flex;flex-direction:column;gap:14px;}
+.exp-item{display:flex;gap:12px;}
+.exp-dot{width:9px;height:9px;border-radius:50%;background:var(--blue);margin-top:5px;flex-shrink:0;}
+.exp-title{font-size:.85rem;font-weight:700;color:var(--g900);}
+.exp-sub{font-size:.78rem;color:var(--g400);margin-top:2px;}
+.exp-section{margin-bottom:22px;}
+.exp-section-lbl{font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px;}
+
+/* BOOKING */
+.booking{background:#fff;border:1.5px solid var(--g200);border-radius:14px;padding:22px;position:sticky;top:80px;}
+.price-main{font-size:1.55rem;font-weight:900;color:var(--g900);letter-spacing:-.03em;line-height:1;}
+.price-main span{font-size:.88rem;font-weight:500;color:var(--g400);}
+.price-sub{font-size:.75rem;color:var(--g400);margin-top:3px;}
+.trial-box{background:var(--green-lt);border:1px solid var(--green-bd);border-radius:9px;padding:10px 13px;margin:14px 0;display:flex;align-items:center;gap:9px;font-size:.78rem;font-weight:600;color:#15803d;}
+.bc-lbl{font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.09em;margin:16px 0 8px;}
+.offers{display:flex;flex-direction:column;gap:7px;}
+.offer{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid var(--g200);border-radius:10px;padding:11px 13px;cursor:pointer;transition:all .15s;}
+.offer:hover{border-color:var(--blue);}
+.offer.on{border-color:var(--blue);background:var(--blue-lt);}
+.offer-title{font-size:.82rem;font-weight:700;color:var(--g900);}
+.offer.on .offer-title{color:var(--blue);}
+.offer-sub{font-size:.7rem;color:var(--g400);margin-top:2px;}
+.offer-price{font-size:.9rem;font-weight:800;color:var(--navy);white-space:nowrap;flex-shrink:0;}
+.offer.on .offer-price{color:var(--blue);}
+.offer-price small{font-size:.65rem;font-weight:400;color:var(--g400);}
+#sched-wrap{margin-top:4px;}
+.period{border:1.5px solid var(--g200);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.period-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--g50);border-bottom:1px solid var(--g200);}
+.period-name{font-size:.8rem;font-weight:700;color:var(--g900);}
+.period-note{font-size:.68rem;color:var(--g400);}
+.period-badge{font-size:.66rem;font-weight:700;padding:2px 9px;border-radius:100px;}
+.pb-wait{background:var(--g100);color:var(--g400);}
+.pb-done{background:var(--green-lt);color:#15803d;}
+.sched-grid{padding:8px;}
+.sg-head{display:grid;gap:2px;margin-bottom:3px;}
+.sg-day{font-size:.6rem;font-weight:700;color:var(--g400);text-align:center;text-transform:uppercase;padding:2px 0;}
+.sg-row{display:grid;gap:2px;margin-bottom:2px;align-items:center;}
+.sg-time{font-size:.58rem;font-weight:600;color:var(--g400);text-align:right;padding-right:4px;}
+.sg-slot{height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:background .1s;}
+.sg-slot.avail{background:var(--blue-lt);cursor:pointer;}
+.sg-slot.avail:hover{background:var(--blue-bd);}
+.sg-slot.sel{background:var(--blue);}
+.sg-slot.busy{background:var(--g100);}
+.sg-slot.dim{background:var(--g100);cursor:not-allowed;}
+.sg-slot.na{background:transparent;}
+.sg-inner{font-size:.6rem;font-weight:700;}
+.sg-slot.avail .sg-inner{color:var(--blue);}
+.sg-slot.sel .sg-inner{color:#fff;}
+.sg-slot.busy .sg-inner,.sg-slot.dim .sg-inner{color:var(--g300);}
+.sched-sub{font-size:.62rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.06em;padding:5px 8px 3px;border-top:1px solid var(--g100);}
+.sched-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.leg{display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--g400);}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.confirm-box{padding:10px 12px;background:var(--green-lt);border:1px solid var(--green-bd);border-radius:8px;font-size:.75rem;color:#15803d;font-weight:600;line-height:1.6;margin-top:10px;}
+.group-sched{display:flex;flex-direction:column;gap:8px;}
+.gs-slot{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--blue-lt);border:1.5px solid var(--blue-bd);border-radius:10px;}
+.gs-icon{width:38px;height:38px;border-radius:9px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.gs-lbl{font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px;}
+.gs-time{font-size:.9rem;font-weight:800;color:var(--navy);}
+.gs-note{font-size:.7rem;color:var(--g500);margin-top:2px;}
+.group-info{padding:9px 12px;background:var(--g50);border-radius:8px;font-size:.75rem;color:var(--g500);line-height:1.6;margin-top:2px;}
+.spots-warn{padding:9px 12px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;font-size:.75rem;color:#92400e;font-weight:600;margin-bottom:10px;}
+.btn-book{width:100%;background:var(--blue);color:#fff;font-size:.93rem;font-weight:700;padding:13px;border-radius:10px;margin-top:14px;transition:background .15s;}
+.btn-book:hover{background:var(--blue-dk);}
+.btn-book:disabled{background:var(--g200);color:var(--g400);cursor:not-allowed;}
+.btn-msg{width:100%;background:#fff;color:var(--navy);font-size:.85rem;font-weight:600;padding:10px;border-radius:10px;border:1.5px solid var(--g200);margin-top:8px;transition:all .15s;}
+.btn-msg:hover{border-color:var(--navy);}
+.guarantee{display:flex;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--g200);font-size:.72rem;color:var(--g500);line-height:1.55;}
+.guarantee strong{color:var(--g700);}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--g200);}
+.qs-item{text-align:center;padding:9px;background:var(--g50);border-radius:8px;}
+.qs-n{font-size:1.05rem;font-weight:800;color:var(--g900);}
+.qs-l{font-size:.62rem;color:var(--g400);margin-top:2px;}
+.similar{background:#fff;border:1.5px solid var(--g200);border-radius:14px;padding:18px;margin-top:14px;}
+.similar-title{font-size:.85rem;font-weight:700;color:var(--g900);margin-bottom:12px;}
+.sim-item{display:flex;align-items:center;gap:11px;padding:9px;border-radius:8px;cursor:pointer;transition:background .15s;}
+.sim-item:hover{background:var(--g50);}
+.sim-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0;}
+.sim-name{font-size:.83rem;font-weight:700;color:var(--g900);}
+.sim-sub{font-size:.72rem;color:var(--g400);margin-top:1px;}
+.sim-price{font-size:.83rem;font-weight:800;color:var(--g900);margin-left:auto;white-space:nowrap;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* SKELETON */
+.skel{background:var(--g200);border-radius:6px;animation:pulse 1.5s ease infinite;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav-wrap">
+  <nav class="nav">
+    <a href="index.html" class="logo">Ustad<span>.</span></a>
+    <div class="nav-links">
+      <a href="index.html#tutors">Trouver un tuteur</a>
+      <a href="index.html#matieres">Matières</a>
+      <a href="index.html#hiw">Comment ça marche</a>
+    </div>
+    <div class="nav-btns" id="nav-btns">
+      <button class="btn-out" onclick="window.location.href='auth.html'">Connexion</button>
+      <button class="btn-fill" onclick="window.location.href='auth.html'">S'inscrire</button>
+    </div>
+  </nav>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="bc-wrap">
+  <div class="bc">
+    <a href="index.html">Accueil</a> ›
+    <a href="index.html#tutors">Tuteurs</a> ›
+    <span id="bc-subject" style="color:var(--g500)">Mathématiques</span> ›
+    <span id="bc-name" style="color:var(--g700)">Chargement...</span>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- LEFT -->
+  <div>
+    <div class="card">
+      <div class="ph">
+        <div class="ph-top">
+          <div class="av-wrap">
+            <div class="av" id="prof-av">YA</div>
+            <div class="av-online"></div>
+          </div>
+          <div class="ph-info">
+            <div class="ph-name" id="prof-name">Chargement...</div>
+            <div class="ph-sub" id="prof-tagline">...</div>
+            <div class="badges">
+              <span class="badge b-super">⭐ Super tuteur</span>
+              <span class="badge b-verif">✓ Profil vérifié</span>
+              <span class="badge b-online">● En ligne</span>
+            </div>
+            <div class="ph-meta">
+              <span class="meta-item" id="prof-city">📍 ...</span>
+              <span class="meta-item">⚡ Répond en &lt;1h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ratings -->
+      <div class="rating-row">
+        <div class="r-big">
+          <div class="r-num" id="r-avg">—</div>
+          <div class="r-stars" id="r-stars">☆☆☆☆☆</div>
+          <div class="r-ct" id="r-ct">0 avis</div>
+        </div>
+        <div class="r-bars" id="r-bars">
+          <div class="r-bar-row"><span class="r-bar-lbl">5★</span><div class="r-bar-track"><div class="r-bar-fill" style="width:0%"></div></div><span class="r-bar-pct">0%</span></div>
+          <div class="r-bar-row"><span class="r-bar-lbl">4★</span><div class="r-bar-track"><div class="r-bar-fill" style="width:0%"></div></div><span class="r-bar-pct">0%</span></div>
+          <div class="r-bar-row"><span class="r-bar-lbl">3★</span><div class="r-bar-track"><div class="r-bar-fill" style="width:0%"></div></div><span class="r-bar-pct">0%</span></div>
+          <div class="r-bar-row"><span class="r-bar-lbl">2★</span><div class="r-bar-track"><div class="r-bar-fill" style="width:0%"></div></div><span class="r-bar-pct">0%</span></div>
+          <div class="r-bar-row"><span class="r-bar-lbl">1★</span><div class="r-bar-track"><div class="r-bar-fill" style="width:0%"></div></div><span class="r-bar-pct">0%</span></div>
+        </div>
+        <div class="r-stats">
+          <div class="r-stat"><div class="r-stat-n" id="r-hours">0h</div><div class="r-stat-l">Cours donnés</div></div>
+          <div class="r-stat"><div class="r-stat-n" id="r-students">0</div><div class="r-stat-l">Étudiants</div></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab on" onclick="switchTab(this,'about')">À propos</div>
+        <div class="tab" onclick="switchTab(this,'subjects')">Matières</div>
+        <div class="tab" onclick="switchTab(this,'reviews')">Avis (<span id="tab-rev-count">0</span>)</div>
+        <div class="tab" onclick="switchTab(this,'resume')">Parcours</div>
+      </div>
+
+      <!-- About -->
+      <div class="tab-body" id="t-about">
+        <div class="about-txt" id="prof-bio">
+          <p style="color:var(--g300)">Chargement du profil...</p>
+        </div>
+        <div class="read-more-btn" id="read-more-btn" style="display:none" onclick="toggleMore()">Lire la suite ↓</div>
+      </div>
+
+      <!-- Subjects -->
+      <div class="tab-body" id="t-subjects" style="display:none">
+        <div class="tag-group">
+          <div class="tag-group-lbl">Matières enseignées</div>
+          <div class="tags" id="prof-subjects"></div>
+        </div>
+        <div class="tag-group">
+          <div class="tag-group-lbl">Niveaux couverts</div>
+          <div class="tags" id="prof-levels"></div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="tab-body" id="t-reviews" style="display:none">
+        <div class="reviews" id="reviews-list">
+          <div style="text-align:center;padding:24px;color:var(--g400);font-size:.85rem">Chargement des avis...</div>
+        </div>
+      </div>
+
+      <!-- Resume -->
+      <div class="tab-body" id="t-resume" style="display:none">
+        <div class="exp-section">
+          <div class="exp-section-lbl">Formation</div>
+          <div class="exp-list" id="prof-education">
+            <div class="exp-item"><div class="exp-dot"></div><div><div class="exp-title">Informations non renseignées</div></div></div>
+          </div>
+        </div>
+        <div class="exp-section">
+          <div class="exp-section-lbl">Expérience</div>
+          <div class="exp-list" id="prof-experience">
+            <div class="exp-item"><div class="exp-dot" style="background:var(--green)"></div><div><div class="exp-title">Tuteur sur Ustad</div><div class="exp-sub" id="exp-ustad">...</div></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="booking">
+
+      <div class="price-main" id="price-main">— DH <span>/mois</span></div>
+      <div class="price-sub" id="price-sub">8 sessions × 1h30 par mois</div>
+
+      <div class="trial-box">🎁 1ère session d'essai gratuite — sans engagement</div>
+
+      <div class="bc-lbl">Formule</div>
+      <div class="offers" id="offers-list"></div>
+
+      <div id="sched-wrap"></div>
+
+      <button class="btn-book" id="btn-book" onclick="book()">Réserver une session d'essai</button>
+      <button class="btn-msg" onclick="sendMessage()">💬 Envoyer un message</button>
+
+      <div class="guarantee">
+        <span>🛡️</span>
+        <span><strong>Satisfait ou remplacé.</strong> Si la 1ère session ne te convient pas, on te trouve un autre tuteur gratuitement.</span>
+      </div>
+
+      <div class="qs">
+        <div class="qs-item"><div class="qs-n" id="qs-sat">94%</div><div class="qs-l">Satisfaction</div></div>
+        <div class="qs-item"><div class="qs-n">&lt;1h</div><div class="qs-l">Réponse</div></div>
+        <div class="qs-item"><div class="qs-n" id="qs-hours">0h</div><div class="qs-l">Cours donnés</div></div>
+        <div class="qs-item"><div class="qs-n" id="qs-students">0</div><div class="qs-l">Étudiants</div></div>
+      </div>
+    </div>
+
+    <!-- Similar tutors -->
+    <div class="similar">
+      <div class="similar-title">Tuteurs similaires</div>
+      <div id="similar-list">
+        <div style="text-align:center;padding:16px;color:var(--g400);font-size:.82rem">Chargement...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = 'https://phcsftysslpiiisqjwhi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoY3NmdHlzc2xwaWlpc3Fqd2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjU1ODMsImV4cCI6MjA4OTIwMTU4M30.8reYXjUdrgjLpxgsYsAfP3H0yf_wTABQHZDYWY_fS8Q';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+/* ══ STATE ══ */
+let tutorData = null;
+let currentUser = null;
+let offerSize = 1;
+let sel = { c1: null, c2: null };
+
+const AV_COLORS = [
+  'linear-gradient(135deg,#1a56db,#60a5fa)',
+  'linear-gradient(135deg,#059669,#34d399)',
+  'linear-gradient(135deg,#d97706,#fcd34d)',
+  'linear-gradient(135deg,#7c3aed,#a78bfa)',
+];
+
+function getInitials(name){return(name||'UT').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function starsHTML(r){const f=Math.round(r||0);return'★'.repeat(f)+'☆'.repeat(5-f);}
+function formatDate(d){return new Date(d).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}
+
+/* ══ INIT ══ */
+(async()=>{
+  // Auth nav
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    currentUser=session.user;
+    const{data:p}=await sb.from('profiles').select('role,full_name').eq('id',session.user.id).single();
+    const dash=p?.role==='tutor'?'dashboard-tutor.html':'dashboard-student.html';
+    const initials=getInitials(p?.full_name||'U');
+    document.getElementById('nav-btns').innerHTML=`
+      <a href="${dash}" style="display:flex;align-items:center;gap:8px;font-size:.875rem;font-weight:600;color:var(--g700)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800">${initials}</div>
+        Mon espace
+      </a>`;
+  }
+
+  // Get tutor ID from URL
+  const params=new URLSearchParams(window.location.search);
+  const tutorId=params.get('id');
+
+  if(tutorId){
+    await loadTutor(tutorId);
+    await loadReviews(tutorId);
+    await loadSimilarTutors(tutorId);
+  } else {
+    // No ID → show demo profile (static data)
+    loadDemoProfile();
+  }
+
+  renderSched();
+})();
+
+/* ══ LOAD TUTOR ══ */
+async function loadTutor(id){
+  const{data,error}=await sb
+    .from('tutors')
+    .select('*,profile:profiles(full_name,avatar_url,city,created_at)')
+    .eq('id',id)
+    .single();
+
+  if(error||!data){ loadDemoProfile(); return; }
+  tutorData=data;
+
+  const name=data.profile?.full_name||'Tuteur';
+  const initials=getInitials(name);
+
+  // Avatar
+  const avEl=document.getElementById('prof-av');
+  if(data.profile?.avatar_url){
+    avEl.innerHTML=`<img src="${data.profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`;
+  } else {
+    avEl.textContent=initials;
+  }
+
+  // Breadcrumb
+  document.getElementById('bc-name').textContent=name;
+  document.title=`${name} — Tuteur | Ustad`;
+  if(data.subjects?.length) document.getElementById('bc-subject').textContent=data.subjects[0];
+
+  // Header
+  document.getElementById('prof-name').textContent=name;
+  document.getElementById('prof-tagline').textContent=data.tagline||(data.subjects||[]).slice(0,2).join(' · ')||'Tuteur sur Ustad';
+  document.getElementById('prof-city').textContent='📍 '+(data.profile?.city||'Maroc');
+
+  // Rating
+  const avg=data.rating_avg||0;
+  const cnt=data.rating_count||0;
+  document.getElementById('r-avg').textContent=avg||'—';
+  document.getElementById('r-stars').textContent=starsHTML(avg);
+  document.getElementById('r-ct').textContent=cnt+' avis';
+  document.getElementById('tab-rev-count').textContent=cnt;
+  document.getElementById('r-hours').textContent=(data.hours_taught||0)+'h';
+  document.getElementById('r-students').textContent=data.students_count||0;
+  document.getElementById('qs-hours').textContent=(data.hours_taught||0)+'h';
+  document.getElementById('qs-students').textContent=data.students_count||0;
+
+  // Bio
+  const bio=data.bio||'Ce tuteur n\'a pas encore renseigné sa biographie.';
+  const parts=bio.split('\n').filter(Boolean);
+  const bioEl=document.getElementById('prof-bio');
+  if(parts.length>1){
+    bioEl.innerHTML=`<p>${parts[0]}</p>`;
+    const moreEl=document.getElementById('about-more');
+    if(moreEl) moreEl.remove();
+    const more=document.createElement('p');
+    more.id='about-more';
+    more.style.display='none';
+    more.textContent=parts.slice(1).join('\n');
+    bioEl.appendChild(more);
+    document.getElementById('read-more-btn').style.display='block';
+  } else {
+    bioEl.innerHTML=`<p>${bio}</p>`;
+  }
+
+  // Subjects & levels
+  document.getElementById('prof-subjects').innerHTML=
+    (data.subjects||[]).map(s=>`<span class="tag tag-blue">${s}</span>`).join('')||'<span style="color:var(--g400);font-size:.82rem">Non renseigné</span>';
+  document.getElementById('prof-levels').innerHTML=
+    (data.levels||[]).map(l=>`<span class="tag tag-gray">${l}</span>`).join('')||'<span style="color:var(--g400);font-size:.82rem">Non renseigné</span>';
+
+  // Resume
+  if(data.profile?.created_at){
+    document.getElementById('exp-ustad').textContent=
+      `${formatDate(data.profile.created_at)} – Présent · ${data.students_count||0} étudiants · ${data.hours_taught||0}h de cours`;
+  }
+
+  // Offers
+  buildOffers(data);
+
+  // Planning — use tutor's availability if exists
+  if(data.avail_c1) AVAIL_C1_DATA=data.avail_c1;
+  if(data.avail_ven) AVAIL_VEN_DATA=data.avail_ven;
+  if(data.avail_sam) AVAIL_SAM_DATA=data.avail_sam;
+  if(data.avail_dim) AVAIL_DIM_DATA=data.avail_dim;
+  renderSched();
+}
+
+/* ══ DEMO PROFILE (fallback) ══ */
+function loadDemoProfile(){
+  document.getElementById('prof-name').textContent='Youssef El Amrani';
+  document.getElementById('prof-tagline').textContent='Tuteur en Mathématiques & Physique-Chimie · Bac SM / SP';
+  document.getElementById('prof-city').textContent='📍 Casablanca';
+  document.getElementById('bc-name').textContent='Youssef El Amrani';
+  document.getElementById('r-avg').textContent='4.9';
+  document.getElementById('r-stars').textContent='★★★★★';
+  document.getElementById('r-ct').textContent='86 avis';
+  document.getElementById('tab-rev-count').textContent='86';
+  document.getElementById('r-hours').textContent='312h';
+  document.getElementById('r-students').textContent='54';
+  document.getElementById('qs-hours').textContent='312h';
+  document.getElementById('qs-students').textContent='54';
+  document.getElementById('prof-bio').innerHTML=`
+    <p>Bonjour ! Je suis Youssef, tuteur spécialisé en Mathématiques et Physique-Chimie pour les élèves de 1ère et 2ème Bac filières Sciences Maths et Sciences Physiques.</p>
+    <p id="about-more" style="display:none">J'ai accompagné plus de 50 élèves, avec un taux de réussite au Bac de 94%. Ma méthode : comprendre les lacunes de chaque élève et construire une progression personnalisée, exercice par exercice. Sessions en visio avec partage d'écran.</p>`;
+  document.getElementById('read-more-btn').style.display='block';
+  document.getElementById('prof-subjects').innerHTML=
+    ['Mathématiques','Physique-Chimie','Algèbre','Analyse','Mécanique'].map(s=>`<span class="tag tag-blue">${s}</span>`).join('');
+  document.getElementById('prof-levels').innerHTML=
+    ['Tronc Commun','1ère Bac SM','2ème Bac SM','1ère Bac SP','2ème Bac SP'].map(l=>`<span class="tag tag-gray">${l}</span>`).join('');
+  document.getElementById('reviews-list').innerHTML=DEMO_REVIEWS;
+  document.getElementById('similar-list').innerHTML=DEMO_SIMILAR;
+
+  // Demo offers
+  document.getElementById('offers-list').innerHTML=`
+    <div class="offer on" data-size="1" data-price="600" data-label="Cours solo" onclick="selectOffer(this)">
+      <div><div class="offer-title">👤 Cours solo</div><div class="offer-sub">1 place · Cours 100% personnalisé</div></div>
+      <div class="offer-price">600 DH <small>/mois</small></div>
+    </div>
+    <div class="offer" data-size="3" data-price="350" data-label="Classe de 3" onclick="selectOffer(this)">
+      <div><div class="offer-title">👥 Classe de 3</div><div class="offer-sub">2 places restantes sur 3</div></div>
+      <div class="offer-price">350 DH <small>/mois</small></div>
+    </div>
+    <div class="offer" data-size="5" data-price="220" data-label="Classe de 5" onclick="selectOffer(this)">
+      <div><div class="offer-title">👥 Classe de 5</div><div class="offer-sub">3 places restantes sur 5</div></div>
+      <div class="offer-price">220 DH <small>/mois</small></div>
+    </div>`;
+  document.getElementById('price-main').innerHTML='600 DH <span>/mois</span>';
+}
+
+/* ══ BUILD OFFERS FROM REAL DATA ══ */
+function buildOffers(t){
+  let html='';
+  html+=`<div class="offer on" data-size="1" data-price="${t.price_solo||300}" data-label="Cours solo" onclick="selectOffer(this)">
+    <div><div class="offer-title">👤 Cours solo</div><div class="offer-sub">1 place · Cours 100% personnalisé</div></div>
+    <div class="offer-price">${t.price_solo||300} DH <small>/mois</small></div>
+  </div>`;
+  if(t.price_class3){
+    html+=`<div class="offer" data-size="3" data-price="${t.price_class3}" data-label="Classe de 3" onclick="selectOffer(this)">
+      <div><div class="offer-title">👥 Classe de 3</div><div class="offer-sub">Places disponibles</div></div>
+      <div class="offer-price">${t.price_class3} DH <small>/mois</small></div>
+    </div>`;
+  }
+  if(t.price_class5){
+    html+=`<div class="offer" data-size="5" data-price="${t.price_class5}" data-label="Classe de 5" onclick="selectOffer(this)">
+      <div><div class="offer-title">👥 Classe de 5</div><div class="offer-sub">Places disponibles</div></div>
+      <div class="offer-price">${t.price_class5} DH <small>/mois</small></div>
+    </div>`;
+  }
+  document.getElementById('offers-list').innerHTML=html;
+  document.getElementById('price-main').innerHTML=`${t.price_solo||300} DH <span>/mois</span>`;
+}
+
+/* ══ LOAD REVIEWS ══ */
+async function loadReviews(tutorId){
+  const{data}=await sb
+    .from('reviews')
+    .select('*,student:profiles!student_id(full_name)')
+    .eq('tutor_id',tutorId)
+    .order('created_at',{ascending:false})
+    .limit(5);
+
+  if(!data?.length){
+    document.getElementById('reviews-list').innerHTML='<div style="text-align:center;padding:24px;color:var(--g400);font-size:.85rem">Aucun avis pour l\'instant.</div>';
+    return;
+  }
+
+  const colors=['linear-gradient(135deg,#7c3aed,#a78bfa)','linear-gradient(135deg,#0891b2,#22d3ee)','linear-gradient(135deg,#db2777,#f472b6)','linear-gradient(135deg,#059669,#34d399)'];
+  document.getElementById('reviews-list').innerHTML=data.map((r,i)=>`
+    <div class="rev">
+      <div class="rev-top">
+        <div class="rev-av" style="background:${colors[i%colors.length]}">${getInitials(r.student?.full_name||'?')}</div>
+        <div><div class="rev-name">${r.student?.full_name||'Étudiant'}</div><div class="rev-date">${formatDate(r.created_at)}</div></div>
+        <div class="rev-stars">${starsHTML(r.rating)}</div>
+      </div>
+      <div class="rev-txt">${r.comment||''}</div>
+      ${r.subject?`<div class="rev-tag">${r.subject}${r.level?' · '+r.level:''}</div>`:''}
+    </div>`).join('');
+}
+
+/* ══ SIMILAR TUTORS ══ */
+async function loadSimilarTutors(currentId){
+  const{data}=await sb
+    .from('tutors')
+    .select('id,price_solo,subjects,profile:profiles(full_name)')
+    .eq('is_active',true).eq('is_verified',true)
+    .neq('id',currentId)
+    .limit(3);
+
+  if(!data?.length){
+    document.getElementById('similar-list').innerHTML=DEMO_SIMILAR;
+    return;
+  }
+  document.getElementById('similar-list').innerHTML=data.map((t,i)=>`
+    <div class="sim-item" onclick="window.location.href='tutor-profile.html?id=${t.id}'">
+      <div class="sim-av" style="background:${AV_COLORS[i%AV_COLORS.length]}">${getInitials(t.profile?.full_name)}</div>
+      <div>
+        <div class="sim-name">${t.profile?.full_name||'Tuteur'}</div>
+        <div class="sim-sub">${(t.subjects||[]).slice(0,2).join(' · ')}</div>
+      </div>
+      <div class="sim-price">${t.price_solo||300} DH</div>
+    </div>`).join('');
+}
+
+/* ══ PLANNING DATA ══ */
+const C1_DAYS=['Lun','Mar','Mer','Jeu'];
+const C1_HOURS=['19:00','20:30','22:00'];
+const C2_HOURS_VEN=['19:00','20:30','22:00'];
+const C2_HOURS_WE=['11:00','12:30','14:00','15:30','17:00','18:30','20:00','21:30'];
+
+// Default availability (will be overridden by tutor's real data)
+let AVAIL_C1_DATA=[[1,1,0],[1,0,1],[0,1,1],[1,1,0]];
+let AVAIL_VEN_DATA=[1,1,0];
+let AVAIL_SAM_DATA=[1,0,1,1,0,1,1,0];
+let AVAIL_DIM_DATA=[0,1,1,0,1,0,1,1];
+
+/* ══ OFFER SELECTOR ══ */
+function selectOffer(el){
+  document.querySelectorAll('.offer').forEach(o=>o.classList.remove('on'));
+  el.classList.add('on');
+  offerSize=parseInt(el.dataset.size);
+  document.getElementById('price-main').innerHTML=el.dataset.price+' DH <span>/mois</span>';
+  document.getElementById('price-sub').textContent=el.dataset.label+' · 8 sessions × 1h30';
+  sel={c1:null,c2:null};
+  renderSched();
+}
+
+/* ══ RENDER SCHEDULE ══ */
+function renderSched(){document.getElementById('sched-wrap').innerHTML=renderSolo();}
+
+function renderSolo(){
+  const c1Done=sel.c1!==null,c2Done=sel.c2!==null;
+  let h=`<div class="bc-lbl" style="margin-top:14px;">Planning hebdomadaire</div>
+  <div style="font-size:.72rem;color:var(--g500);margin-bottom:10px;line-height:1.6;">Sélectionne <strong>1 créneau dans chaque période</strong>. Ils se répèteront chaque semaine.</div>
+  <div class="sched-legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--blue-lt);border:1px solid var(--blue-bd)"></div>Disponible</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>Sélectionné</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--g100);border:1px solid var(--g200)"></div>Indisponible</div>
+  </div>`;
+
+  // C1
+  h+=`<div class="period"><div class="period-head"><div><div class="period-name">📅 Cours 1 — Lun au Jeu</div><div class="period-note">19h00 à minuit</div></div><div class="period-badge ${c1Done?'pb-done':'pb-wait'}">${c1Done?'✓ Choisi':'À choisir'}</div></div><div class="sched-grid">
+    <div class="sg-head" style="grid-template-columns:36px repeat(4,1fr)"><div></div>${C1_DAYS.map(d=>`<div class="sg-day">${d}</div>`).join('')}</div>`;
+  C1_HOURS.forEach((hr,hi)=>{
+    h+=`<div class="sg-row" style="grid-template-columns:36px repeat(4,1fr)"><div class="sg-time">${hr}</div>`;
+    C1_DAYS.forEach((_,di)=>{
+      const avail=AVAIL_C1_DATA[di]?AVAIL_C1_DATA[di][hi]:0;
+      const key=`c1-${di}-${hi}`;
+      const isSel=sel.c1&&sel.c1.key===key;
+      const dim=!isSel&&c1Done;
+      const cls=avail?(isSel?'sel':dim?'dim':'avail'):'busy';
+      const inner=isSel?'✓':(avail&&!dim?'+':'');
+      const click=avail&&!dim?`onclick="pickC1(${di},${hi},'${hr}')"`:isSel?`onclick="pickC1(${di},${hi},'${hr}')"`:''
+      h+=`<div class="sg-slot ${cls}" ${click}><div class="sg-inner">${inner}</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`</div></div>`;
+
+  // C2
+  h+=`<div class="period" style="margin-top:0"><div class="period-head"><div><div class="period-name">📅 Cours 2 — Ven au Dim</div><div class="period-note">Ven: 19h–minuit · Sam/Dim: 11h–minuit</div></div><div class="period-badge ${c2Done?'pb-done':'pb-wait'}">${c2Done?'✓ Choisi':'À choisir'}</div></div><div class="sched-grid">`;
+  h+=`<div class="sched-sub">Vendredi</div><div class="sg-head" style="grid-template-columns:36px 1fr 1fr 1fr"><div></div><div class="sg-day">Ven</div><div></div><div></div></div>`;
+  C2_HOURS_VEN.forEach((hr,hi)=>{
+    const avail=AVAIL_VEN_DATA[hi]||0;
+    const key=`c2-ven-${hi}`;
+    const isSel=sel.c2&&sel.c2.key===key;
+    const dim=!isSel&&c2Done;
+    const cls=avail?(isSel?'sel':dim?'dim':'avail'):'busy';
+    const inner=isSel?'✓':(avail&&!dim?'+':'');
+    const click=avail&&!dim?`onclick="pickC2ven(${hi},'${hr}')"`:isSel?`onclick="pickC2ven(${hi},'${hr}')"`:''
+    h+=`<div class="sg-row" style="grid-template-columns:36px 1fr 1fr 1fr"><div class="sg-time">${hr}</div><div class="sg-slot ${cls}" ${click}><div class="sg-inner">${inner}</div></div><div class="sg-slot na"></div><div class="sg-slot na"></div></div>`;
+  });
+  h+=`<div class="sched-sub" style="margin-top:4px">Samedi & Dimanche</div><div class="sg-head" style="grid-template-columns:36px 1fr 1fr 1fr"><div></div><div class="sg-day" style="color:var(--g200)">Ven</div><div class="sg-day">Sam</div><div class="sg-day">Dim</div></div>`;
+  C2_HOURS_WE.forEach((hr,hi)=>{
+    h+=`<div class="sg-row" style="grid-template-columns:36px 1fr 1fr 1fr"><div class="sg-time">${hr}</div><div class="sg-slot na"></div>`;
+    [[AVAIL_SAM_DATA,'sam'],[AVAIL_DIM_DATA,'dim']].forEach(([avArr,dayKey])=>{
+      const avail=avArr[hi]||0;
+      const key=`c2-${dayKey}-${hi}`;
+      const isSel=sel.c2&&sel.c2.key===key;
+      const dim=!isSel&&c2Done;
+      const cls=avail?(isSel?'sel':dim?'dim':'avail'):'busy';
+      const inner=isSel?'✓':(avail&&!dim?'+':'');
+      const click=avail&&!dim?`onclick="pickC2we('${dayKey}',${hi},'${hr}')"`:isSel?`onclick="pickC2we('${dayKey}',${hi},'${hr}')"`:''
+      h+=`<div class="sg-slot ${cls}" ${click}><div class="sg-inner">${inner}</div></div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`</div></div>`;
+
+  if(c1Done&&c2Done){
+    h+=`<div class="confirm-box">✅ Planning confirmé chaque semaine :<br>· Cours 1 : ${sel.c1.label}<br>· Cours 2 : ${sel.c2.label}</div>`;
+  }
+  return h;
+}
+
+/* ══ SLOT PICKERS ══ */
+function pickC1(di,hi,hr){const key=`c1-${di}-${hi}`;sel.c1=sel.c1&&sel.c1.key===key?null:{key,label:`${C1_DAYS[di]} ${hr}`};renderSched();}
+function pickC2ven(hi,hr){const key=`c2-ven-${hi}`;sel.c2=sel.c2&&sel.c2.key===key?null:{key,label:`Vendredi ${hr}`};renderSched();}
+function pickC2we(dayKey,hi,hr){const key=`c2-${dayKey}-${hi}`;const label=`${dayKey==='sam'?'Samedi':'Dimanche'} ${hr}`;sel.c2=sel.c2&&sel.c2.key===key?null:{key,label};renderSched();}
+
+/* ══ BOOK — Envoie dans Supabase ══ */
+async function book(){
+  if(!sel.c1||!sel.c2){
+    showToast('Sélectionne 1 créneau dans Cours 1 et 1 dans Cours 2.'); return;
+  }
+
+  // Vérifie si connecté
+  if(!currentUser){
+    if(confirm('Tu dois être connecté pour réserver. Aller à la page de connexion ?')){
+      window.location.href='auth.html';
+    }
+    return;
+  }
+
+  const offer=document.querySelector('.offer.on');
+  const price=parseInt(offer?.dataset.price||300);
+  const label=offer?.dataset.label||'Cours solo';
+  const type=offerSize===1?'solo':offerSize===3?'class3':'class5';
+
+  const btn=document.getElementById('btn-book');
+  btn.disabled=true;
+  btn.textContent='Envoi en cours...';
+
+  try{
+    const tutorId=tutorData?.id||(new URLSearchParams(window.location.search).get('id'));
+
+    if(tutorId){
+      await sb.from('bookings').insert({
+        student_id:    currentUser.id,
+        tutor_id:      tutorId,
+        offer_type:    type,
+        c1_day:        sel.c1.label.split(' ')[0],
+        c1_hour:       sel.c1.label.split(' ')[1],
+        c2_day:        sel.c2.label.split(' ')[0],
+        c2_hour:       sel.c2.label.split(' ')[1],
+        monthly_price: price,
+        status:        'pending',
+      });
+    }
+
+    showToast('✅ Demande envoyée ! Le tuteur confirmera sous 24h.');
+    btn.textContent='✅ Demande envoyée';
+    setTimeout(()=>{btn.disabled=false;btn.textContent='Réserver une session d\'essai';},3000);
+
+  }catch(err){
+    showToast('❌ Erreur : '+err.message);
+    btn.disabled=false;
+    btn.textContent='Réserver une session d\'essai';
+  }
+}
+
+/* ══ MESSAGE ══ */
+function sendMessage(){
+  if(!currentUser){ window.location.href='auth.html'; return; }
+  window.location.href='dashboard-student.html#messages';
+}
+
+/* ══ TABS ══ */
+function switchTab(el,name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  ['about','subjects','reviews','resume'].forEach(id=>{
+    document.getElementById('t-'+id).style.display=id===name?'block':'none';
+  });
+}
+
+/* ══ READ MORE ══ */
+let moreOpen=false;
+function toggleMore(){
+  moreOpen=!moreOpen;
+  const el=document.getElementById('about-more');
+  if(el) el.style.display=moreOpen?'block':'none';
+  document.getElementById('read-more-btn').textContent=moreOpen?'Réduire ↑':'Lire la suite ↓';
+}
+
+/* ══ TOAST ══ */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ══ DEMO DATA ══ */
+const DEMO_REVIEWS=`
+<div class="rev"><div class="rev-top"><div class="rev-av" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">SA</div><div><div class="rev-name">Sara Amrani</div><div class="rev-date">Février 2025</div></div><div class="rev-stars">★★★★★</div></div><div class="rev-txt">En 3 mois j'ai complètement rattrapé mon retard en Maths. J'ai eu 17/20 au Bac blanc !</div><div class="rev-tag">Mathématiques · 2ème Bac SM</div></div>
+<div class="rev"><div class="rev-top"><div class="rev-av" style="background:linear-gradient(135deg,#0891b2,#22d3ee)">KM</div><div><div class="rev-name">Karim Moussaoui</div><div class="rev-date">Janvier 2025</div></div><div class="rev-stars">★★★★★</div></div><div class="rev-txt">Très professionnel et pédagogue. On comprend vraiment le raisonnement, pas juste la réponse.</div><div class="rev-tag">Physique-Chimie · 1ère Bac SP</div></div>
+<div class="rev"><div class="rev-top"><div class="rev-av" style="background:linear-gradient(135deg,#db2777,#f472b6)">LB</div><div><div class="rev-name">Leila Benkirane</div><div class="rev-date">Décembre 2024</div></div><div class="rev-stars">★★★★★</div></div><div class="rev-txt">Mon fils a énormément progressé. Sessions très bien organisées avec partage de documents.</div><div class="rev-tag">Mathématiques · Tronc Commun</div></div>`;
+
+const DEMO_SIMILAR=`
+<div class="sim-item" onclick="window.location.href='index.html#tutors'"><div class="sim-av" style="background:linear-gradient(135deg,#0891b2,#22d3ee)">KT</div><div><div class="sim-name">Karim Tazi</div><div class="sim-sub">SVT · Chimie</div></div><div class="sim-price">450 DH</div></div>
+<div class="sim-item" onclick="window.location.href='index.html#tutors'"><div class="sim-av" style="background:linear-gradient(135deg,#be123c,#fb7185)">AO</div><div><div class="sim-name">Amine Ouazzani</div><div class="sim-sub">Maths · Info</div></div><div class="sim-price">500 DH</div></div>
+<div class="sim-item" onclick="window.location.href='index.html#tutors'"><div class="sim-av" style="background:linear-gradient(135deg,#0f766e,#2dd4bf)">HB</div><div><div class="sim-name">Hajar Bensouda</div><div class="sim-sub">Chimie · SVT</div></div><div class="sim-price">300 DH</div></div>`;
+</script>
+</body>
+</html>
