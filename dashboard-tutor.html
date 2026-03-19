@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon espace tuteur — Ustad</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#f3f4f6;color:#111827;min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:'Inter',sans-serif;}
+:root{--navy:#0d1f3c;--blue:#1a56db;--blue-dk:#1344b8;--blue-lt:#eff6ff;--blue-bd:#bfdbfe;--g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;--g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;--yellow:#f59e0b;--green:#16a34a;--green-lt:#f0fdf4;--green-bd:#bbf7d0;--red:#dc2626;--red-lt:#fef2f2;--red-bd:#fecaca;--sb-w:256px;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:var(--sb-w);flex-shrink:0;background:var(--navy);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:200;overflow-y:auto;}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;}
+.sb-logo{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.sb-logo span{color:#93c5fd;}
+.sb-role{font-size:.62rem;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
+.sb-user{margin:14px 12px;padding:12px;background:rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;gap:10px;}
+.sb-av{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--blue),#60a5fa);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;overflow:hidden;}
+.sb-uname{font-size:.83rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-ustatus{display:flex;align-items:center;gap:5px;font-size:.68rem;color:rgba(255,255,255,.4);margin-top:2px;}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;}
+.sb-nav{flex:1;padding:8px 12px;}
+.sb-group-lbl{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.12em;padding:12px 8px 6px;}
+.sb-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:.85rem;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;margin-bottom:1px;}
+.sb-link:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+.sb-link.active{background:rgba(26,86,219,.4);color:#fff;font-weight:700;}
+.sb-link .ico{font-size:.95rem;width:22px;text-align:center;flex-shrink:0;}
+.sb-link .lbl{flex:1;}
+.sb-notif{background:var(--red);color:#fff;font-size:.6rem;font-weight:800;padding:1px 6px;border-radius:100px;min-width:18px;text-align:center;}
+.sb-bottom{padding:12px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-logout{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:.82rem;font-weight:500;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;width:100%;}
+.sb-logout:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);}
+.main{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--g200);height:60px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.topbar-title{font-size:1rem;font-weight:800;color:var(--g900);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.btn{font-size:.82rem;font-weight:700;padding:8px 16px;border-radius:8px;transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.btn-primary{background:var(--blue);color:#fff;}.btn-primary:hover{background:var(--blue-dk);}
+.btn-outline{border:1.5px solid var(--g200);color:var(--g700);background:#fff;}.btn-outline:hover{border-color:var(--g700);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#15803d;}
+.btn-red{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}.btn-red:hover{background:var(--red);color:#fff;}
+.btn-sm{font-size:.75rem;padding:6px 12px;}
+.content{padding:24px 28px 80px;}
+.card{background:#fff;border:1px solid var(--g200);border-radius:14px;overflow:hidden;margin-bottom:18px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:.92rem;font-weight:800;color:var(--g900);}
+.card-desc{font-size:.75rem;color:var(--g400);margin-top:2px;}
+.card-body{padding:20px;}.card-body.no-pad{padding:0;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0;}
+.stat.blue::before{background:var(--blue);}.stat.green::before{background:var(--green);}.stat.yellow::before{background:var(--yellow);}.stat.navy::before{background:var(--navy);}
+.stat-icon{font-size:1.3rem;margin-bottom:10px;}
+.stat-val{font-size:1.7rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;line-height:1;}
+.stat-lbl{font-size:.73rem;color:var(--g400);margin-top:5px;font-weight:500;}
+.stat-delta{font-size:.7rem;font-weight:600;margin-top:6px;}.up{color:var(--green);}
+.res-item{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--g100);transition:background .12s;}
+.res-item:last-child{border-bottom:none;}.res-item:hover{background:var(--g50);}
+.res-av{width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;}
+.res-info{flex:1;min-width:0;}
+.res-name{font-size:.88rem;font-weight:700;color:var(--g900);}
+.res-detail{font-size:.73rem;color:var(--g400);margin-top:3px;display:flex;flex-wrap:wrap;gap:8px;}
+.res-tag{display:inline-flex;align-items:center;gap:3px;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:100px;}
+.tag-pending{background:#fef3c7;color:#92400e;}.tag-confirmed{background:var(--green-lt);color:#15803d;}.tag-solo{background:var(--blue-lt);color:var(--blue);}.tag-group{background:#f3e8ff;color:#7e22ce;}
+.res-actions{display:flex;gap:7px;flex-shrink:0;}
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.student-card{border:1px solid var(--g200);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:box-shadow .15s;background:#fff;}
+.student-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+.sc-top{display:flex;align-items:center;gap:12px;}
+.sc-av{width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:800;color:#fff;}
+.sc-name{font-size:.9rem;font-weight:700;color:var(--g900);}
+.sc-detail{font-size:.73rem;color:var(--g400);margin-top:2px;}
+.sc-schedule{background:var(--g50);border-radius:8px;padding:10px 12px;font-size:.73rem;color:var(--g500);line-height:1.7;}
+.sc-schedule strong{color:var(--g700);}
+.sc-prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.sc-prog-lbl{font-size:.72rem;color:var(--g400);}
+.sc-prog-val{font-size:.72rem;font-weight:700;color:var(--g700);}
+.sc-bar{height:6px;background:var(--g100);border-radius:100px;overflow:hidden;}
+.sc-bar-fill{height:100%;border-radius:100px;background:var(--blue);}
+.sc-actions{display:flex;gap:7px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.field{display:flex;flex-direction:column;gap:5px;}.field.full{grid-column:1/-1;}
+label{font-size:.72rem;font-weight:700;color:var(--g700);letter-spacing:.01em;}
+.input{padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.875rem;color:var(--g900);outline:none;transition:border-color .15s;background:#fff;width:100%;}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+textarea.input{resize:vertical;min-height:96px;line-height:1.65;}
+.input-hint{font-size:.68rem;color:var(--g400);margin-top:3px;}
+.tags-box{display:flex;flex-wrap:wrap;gap:6px;padding:7px 10px;border:1.5px solid var(--g200);border-radius:8px;min-height:42px;cursor:text;transition:border-color .15s;background:#fff;}
+.tags-box:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.t-item{display:inline-flex;align-items:center;gap:4px;background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);border-radius:5px;padding:2px 8px;font-size:.73rem;font-weight:600;}
+.t-rm{cursor:pointer;opacity:.5;font-size:.85rem;line-height:1;}.t-rm:hover{opacity:1;}
+.t-input{border:none;outline:none;background:transparent;font-size:.82rem;font-family:'Inter',sans-serif;flex:1;min-width:80px;padding:2px 3px;color:var(--g900);}
+.av-upload{display:flex;align-items:center;gap:16px;padding:16px;background:var(--g50);border-radius:10px;border:1.5px dashed var(--g200);cursor:pointer;transition:border-color .15s;grid-column:1/-1;}
+.av-upload:hover{border-color:var(--blue);}
+.av-big{width:64px;height:64px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--blue),#60a5fa);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900;color:#fff;overflow:hidden;}
+.av-big img{width:100%;height:100%;object-fit:cover;}
+.av-txt{font-size:.82rem;color:var(--g700);font-weight:500;}
+.av-txt small{display:block;font-size:.7rem;color:var(--g400);margin-top:2px;}
+.pricing-info{padding:12px 14px;background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:8px;font-size:.8rem;color:var(--navy);margin-bottom:20px;line-height:1.6;}
+.offer-row{border:1.5px solid var(--g200);border-radius:11px;padding:16px 18px;margin-bottom:10px;transition:border-color .15s;}
+.offer-row.active{border-color:var(--blue-bd);background:var(--blue-lt);}
+.offer-top{display:flex;align-items:center;gap:14px;}
+.offer-icon{font-size:1.2rem;flex-shrink:0;}
+.offer-text{flex:1;}
+.offer-name{font-size:.88rem;font-weight:700;color:var(--g900);}
+.offer-row.active .offer-name{color:var(--blue);}
+.offer-note{font-size:.72rem;color:var(--g400);margin-top:2px;}
+.offer-price-wrap{display:flex;align-items:center;gap:8px;}
+.offer-price-input{width:90px;text-align:right;padding:7px 10px;border:1.5px solid var(--g200);border-radius:7px;font-size:.9rem;font-weight:700;color:var(--g900);outline:none;transition:border-color .15s;}
+.offer-price-input:focus{border-color:var(--blue);}
+.offer-cur{font-size:.8rem;color:var(--g500);font-weight:600;}
+.offer-net{font-size:.72rem;color:var(--g500);margin-top:10px;padding-top:10px;border-top:1px solid var(--g200);display:none;}
+.offer-net.show{display:block;}
+.offer-net strong{color:var(--green);}
+.tog{position:relative;width:38px;height:21px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;position:absolute;}
+.tog-track{position:absolute;inset:0;background:var(--g200);border-radius:100px;cursor:pointer;transition:background .18s;}
+.tog-track::after{content:'';position:absolute;width:15px;height:15px;top:3px;left:3px;background:#fff;border-radius:50%;transition:transform .18s;}
+.tog input:checked~.tog-track{background:var(--blue);}
+.tog input:checked~.tog-track::after{transform:translateX(17px);}
+.rev-estimate{margin-top:16px;padding:14px 16px;background:var(--g50);border:1px solid var(--g200);border-radius:10px;}
+.rev-row{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--g100);}
+.rev-row:last-child{border-bottom:none;font-weight:700;color:var(--g900);}
+.rev-lbl{color:var(--g500);}.rev-val{font-weight:700;color:var(--green);}
+.planning-info{padding:11px 14px;background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:8px;font-size:.8rem;color:var(--navy);margin-bottom:18px;}
+.plan-section{margin-bottom:22px;}
+.plan-section-title{font-size:.72rem;font-weight:800;color:var(--g700);text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g200);}
+.plan-head{display:flex;gap:2px;margin-bottom:3px;}
+.plan-head-corner{width:52px;flex-shrink:0;}
+.plan-head-day{flex:1;text-align:center;font-size:.62rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;padding:3px 0;}
+.plan-row{display:flex;gap:2px;margin-bottom:2px;}
+.plan-time{width:52px;flex-shrink:0;font-size:.62rem;font-weight:600;color:var(--g400);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;}
+.plan-slot{flex:1;height:32px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;border:1.5px solid var(--g200);background:#fff;color:var(--g300);transition:all .12s;user-select:none;}
+.plan-slot:hover:not(.on){border-color:var(--blue-bd);color:var(--blue);}
+.plan-slot.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.plan-legend{display:flex;gap:14px;margin-top:10px;}
+.plan-leg{display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--g400);}
+.plan-leg-dot{width:11px;height:11px;border-radius:3px;}
+.save-bar{position:fixed;bottom:0;left:var(--sb-w);right:0;background:#fff;border-top:1px solid var(--g200);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;z-index:150;transform:translateY(100%);transition:transform .2s;}
+.save-bar.visible{transform:translateY(0);}
+.save-note{font-size:.82rem;color:var(--g500);}
+.toast{position:fixed;bottom:72px;right:24px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--g400);}
+.empty-state .ei{font-size:2.2rem;margin-bottom:10px;}
+.empty-state .et{font-size:.85rem;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:1024px){.stats-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){:root{--sb-w:0px;}.sidebar{display:none;}.save-bar{left:0;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div><div class="sb-logo">Ustad<span>.</span></div><div class="sb-role">Espace tuteur</div></div>
+    <a href="index.html" style="font-size:.7rem;color:rgba(255,255,255,.3);" onmouseover="this.style.color='rgba(255,255,255,.7)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">← Site</a>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av" id="sb-initials">YA</div>
+    <div style="min-width:0;">
+      <div class="sb-uname" id="sb-name">Chargement...</div>
+      <div class="sb-ustatus"><div class="sb-dot"></div>En ligne</div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group-lbl">Principal</div>
+    <div class="sb-link active" data-section="overview"><span class="ico">📊</span><span class="lbl">Vue d'ensemble</span></div>
+    <div class="sb-link" data-section="reservations"><span class="ico">📅</span><span class="lbl">Réservations</span><span class="sb-notif" id="notif-res" style="display:none">0</span></div>
+    <div class="sb-link" data-section="students"><span class="ico">👥</span><span class="lbl">Mes étudiants</span></div>
+    <div class="sb-group-lbl">Mon profil</div>
+    <div class="sb-link" data-section="profile"><span class="ico">👤</span><span class="lbl">Infos & Bio</span></div>
+    <div class="sb-link" data-section="pricing"><span class="ico">💰</span><span class="lbl">Formules & Prix</span></div>
+    <div class="sb-link" data-section="planning"><span class="ico">🗓</span><span class="lbl">Disponibilités</span></div>
+  </nav>
+  <div class="sb-bottom">
+    <a href="tutor-profile.html" id="my-profile-link" target="_blank" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:.8rem;font-weight:500;color:rgba(255,255,255,.4);transition:all .15s;margin-bottom:4px;" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.75)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.4)'">
+      <span>👁</span> Voir mon profil public
+    </a>
+    <button class="sb-logout" onclick="logout()"><span>🚪</span> Déconnexion</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Vue d'ensemble</div>
+    <div class="topbar-right">
+      <a href="tutor-profile.html" id="topbar-profile-link" target="_blank"><button class="btn btn-outline btn-sm">👁 Voir mon profil</button></a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="s-overview">
+      <div class="stats-grid">
+        <div class="stat blue"><div class="stat-icon">💰</div><div class="stat-val" id="ov-revenue">— DH</div><div class="stat-lbl">Revenus ce mois</div></div>
+        <div class="stat green"><div class="stat-icon">👥</div><div class="stat-val" id="ov-students">—</div><div class="stat-lbl">Étudiants actifs</div></div>
+        <div class="stat yellow"><div class="stat-icon">📅</div><div class="stat-val" id="ov-sessions">—</div><div class="stat-lbl">Sessions ce mois</div></div>
+        <div class="stat navy"><div class="stat-icon">⭐</div><div class="stat-val" id="ov-rating">—</div><div class="stat-lbl">Note moyenne</div><div class="stat-delta" id="ov-rating-delta" style="color:var(--yellow)"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">🔔 Réservations en attente</div><div class="card-desc">Ces étudiants attendent ta confirmation</div></div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('reservations')">Tout voir →</button>
+        </div>
+        <div class="card-body no-pad" id="ov-pending-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">👥 Étudiants actifs</div><div class="card-desc">Abonnements confirmés ce mois</div></div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('students')">Tout voir →</button>
+        </div>
+        <div class="card-body no-pad" id="ov-students-list"></div>
+      </div>
+    </div>
+
+    <!-- RESERVATIONS -->
+    <div id="s-reservations" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">⏳ En attente de confirmation</div></div>
+        <div class="card-body no-pad" id="res-pending"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">✅ Confirmées</div></div>
+        <div class="card-body no-pad" id="res-confirmed"></div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="s-students" style="display:none">
+      <div class="student-grid" id="students-grid"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="s-profile" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">👤 Informations personnelles</div></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="av-upload full" onclick="document.getElementById('av-file').click()">
+              <div class="av-big" id="av-preview-big">YA</div>
+              <div class="av-txt">Changer ma photo de profil<small>JPG ou PNG · Max 2 MB · Une photo augmente les réservations de 40%</small></div>
+              <input type="file" id="av-file" accept="image/*" style="display:none" onchange="previewAv(this)">
+            </div>
+            <div class="field"><label>Prénom</label><input class="input" type="text" id="f-fname" placeholder="Youssef" oninput="dirty()"></div>
+            <div class="field"><label>Nom</label><input class="input" type="text" id="f-lname" placeholder="El Amrani" oninput="dirty()"></div>
+            <div class="field full"><label>Titre / Tagline public</label><input class="input" type="text" id="f-tagline" placeholder="Ex: Tuteur Mathématiques & Physique · Bac SM/SP" oninput="dirty()"></div>
+            <div class="field full"><label>Bio (visible par les étudiants)</label><textarea class="input" id="f-bio" placeholder="Présente-toi, ton expérience, ta méthode pédagogique..." oninput="dirty()"></textarea></div>
+            <div class="field"><label>Téléphone</label><input class="input" type="tel" id="f-phone" placeholder="+212 6XX XXX XXX" oninput="dirty()"></div>
+            <div class="field">
+              <label>Ville</label>
+              <select class="input" id="f-city" onchange="dirty()">
+                <option value="">Sélectionne ta ville</option>
+                <option>Casablanca</option><option>Rabat</option><option>Marrakech</option>
+                <option>Fès</option><option>Tanger</option><option>Agadir</option>
+                <option>Meknès</option><option>Oujda</option><option>Autre</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label>Matières enseignées</label>
+              <div class="tags-box" id="tags-subjects" onclick="document.getElementById('ti-subjects').focus()">
+                <input class="t-input" id="ti-subjects" placeholder="Tape une matière + Entrée" onkeydown="addTag(event,'subjects')">
+              </div>
+              <div class="input-hint">Ex: Mathématiques · Physique-Chimie · SVT…</div>
+            </div>
+            <div class="field full">
+              <label>Niveaux couverts</label>
+              <div class="tags-box" id="tags-levels" onclick="document.getElementById('ti-levels').focus()">
+                <input class="t-input" id="ti-levels" placeholder="Tape un niveau + Entrée" onkeydown="addTag(event,'levels')">
+              </div>
+              <div class="input-hint">Ex: Tronc Commun · 1ère Bac SM · 2ème Bac SP…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING -->
+    <div id="s-pricing" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">💰 Mes formules & prix</div></div>
+        <div class="card-body">
+          <div class="pricing-info">💡 Ustad prélève <strong>25% de commission</strong>. Les prix ci-dessous sont ce que l'étudiant paie. Tu recevras <strong>75%</strong> de chaque paiement mensuel.</div>
+          <div class="offer-row active">
+            <div class="offer-top">
+              <div class="offer-icon">👤</div>
+              <div class="offer-text"><div class="offer-name">Cours solo</div><div class="offer-note">Toujours activé · 1 étudiant par session</div></div>
+              <div class="offer-price-wrap"><input class="offer-price-input" type="number" id="p-solo" value="600" min="300" step="50" oninput="dirty();calcNet()"><span class="offer-cur">DH/mois</span></div>
+            </div>
+            <div class="offer-net show" id="net-solo">Tu recevras <strong id="net-solo-val">450 DH</strong>/mois après commission</div>
+          </div>
+          <div class="offer-row" id="or-class3">
+            <div class="offer-top">
+              <label class="tog" style="flex-shrink:0"><input type="checkbox" id="tog-class3" onchange="toggleOffer('class3');dirty()"><div class="tog-track"></div></label>
+              <div class="offer-icon">👥</div>
+              <div class="offer-text"><div class="offer-name">Classe de 3 étudiants</div><div class="offer-note">Max 3 étudiants · même session · même créneau</div></div>
+              <div class="offer-price-wrap" id="pw-class3" style="display:none"><input class="offer-price-input" type="number" id="p-class3" value="350" min="150" step="50" oninput="dirty();calcNet()"><span class="offer-cur">DH/mois</span></div>
+            </div>
+            <div class="offer-net" id="net-class3">Tu recevras <strong id="net-class3-val">—</strong>/mois par étudiant · <strong id="net-class3-total">—</strong> si classe complète</div>
+          </div>
+          <div class="offer-row" id="or-class5">
+            <div class="offer-top">
+              <label class="tog" style="flex-shrink:0"><input type="checkbox" id="tog-class5" onchange="toggleOffer('class5');dirty()"><div class="tog-track"></div></label>
+              <div class="offer-icon">👥</div>
+              <div class="offer-text"><div class="offer-name">Classe de 5 étudiants</div><div class="offer-note">Max 5 étudiants · même session · même créneau</div></div>
+              <div class="offer-price-wrap" id="pw-class5" style="display:none"><input class="offer-price-input" type="number" id="p-class5" value="220" min="100" step="50" oninput="dirty();calcNet()"><span class="offer-cur">DH/mois</span></div>
+            </div>
+            <div class="offer-net" id="net-class5">Tu recevras <strong id="net-class5-val">—</strong>/mois par étudiant · <strong id="net-class5-total">—</strong> si classe complète</div>
+          </div>
+          <div class="rev-estimate">
+            <div style="font-size:.78rem;font-weight:800;color:var(--g700);margin-bottom:10px;">📈 Potentiel mensuel (si toutes places prises)</div>
+            <div id="rev-rows"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLANNING -->
+    <div id="s-planning" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🗓 Mes disponibilités hebdomadaires</div></div>
+        <div class="card-body">
+          <div class="planning-info">📌 Clique sur un créneau pour l'activer ou le désactiver. Les étudiants voient uniquement tes créneaux actifs (en bleu).</div>
+          <div class="plan-section"><div class="plan-section-title">📅 Cours 1 — Lundi au Jeudi · 19h00 → minuit</div><div id="plan-c1"></div></div>
+          <div class="plan-section"><div class="plan-section-title">📅 Cours 2 — Vendredi · 19h00 → minuit</div><div id="plan-ven"></div></div>
+          <div class="plan-section"><div class="plan-section-title">📅 Cours 2 — Samedi & Dimanche · 11h00 → minuit</div><div id="plan-we"></div></div>
+          <div class="plan-legend">
+            <div class="plan-leg"><div class="plan-leg-dot" style="background:var(--blue)"></div>Disponible</div>
+            <div class="plan-leg"><div class="plan-leg-dot" style="background:#fff;border:1.5px solid var(--g200)"></div>Indisponible</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="save-bar" id="save-bar">
+  <div class="save-note">⚠️ Tu as des modifications non sauvegardées</div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-outline btn-sm" onclick="cancelChanges()">Annuler</button>
+    <button class="btn btn-primary btn-sm" id="save-btn" onclick="saveAll()">💾 Sauvegarder</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = 'https://phcsftysslpiiisqjwhi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoY3NmdHlzc2xwaWlpc3Fqd2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjU1ODMsImV4cCI6MjA4OTIwMTU4M30.8reYXjUdrgjLpxgsYsAfP3H0yf_wTABQHZDYWY_fS8Q';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+let user=null,profile=null,tutor=null,isDirty=false;
+let tagData={subjects:[],levels:[]};
+const COLORS=['#7c3aed','#0891b2','#db2777','#059669','#d97706','#be123c','#0f766e','#1a56db'];
+const C1_DAYS=['Lundi','Mardi','Mercredi','Jeudi'],C1_HRS=['19:00','20:30','22:00'];
+const VEN_HRS=['19:00','20:30','22:00'],WE_HRS=['11:00','12:30','14:00','15:30','17:00','18:30','20:00','21:30'];
+const WE_DAYS=['Samedi','Dimanche'];
+let avail={c1:[[1,1,0],[1,0,1],[0,1,1],[1,1,0]],ven:[1,1,0],sam:[1,0,1,1,0,1,1,0],dim:[0,1,1,0,1,0,1,1]};
+
+function ini(n){return(n||'UA').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function col(n){return COLORS[(n||'').length%COLORS.length];}
+
+/* ══ INIT ══ */
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='auth.html';return;}
+  user=session.user;
+  const{data:p}=await sb.from('profiles').select('*').eq('id',user.id).single();
+  profile=p;
+  if(p?.role!=='tutor'){location.href='dashboard-student.html';return;}
+  const{data:t}=await sb.from('tutors').select('*').eq('id',user.id).single();
+  tutor=t;
+  // Lien profil public avec vrai ID
+  const profLink=`tutor-profile.html?id=${user.id}`;
+  document.getElementById('my-profile-link').href=profLink;
+  document.getElementById('topbar-profile-link').href=profLink;
+  fillProfile();fillPricing();
+  if(t)restoreAvail(t);
+  buildPlanning();calcNet();
+  await loadData();
+  // Temps réel — nouvelles réservations
+  sb.channel('new-bookings').on('postgres_changes',{event:'INSERT',schema:'public',table:'bookings',filter:`tutor_id=eq.${user.id}`},()=>{showToast('🔔 Nouvelle demande de réservation !');loadData();}).subscribe();
+})();
+
+/* ══ LOAD REAL DATA ══ */
+async function loadData(){
+  const{data:bookings}=await sb.from('bookings').select('*,student:profiles!student_id(full_name,phone,city)').eq('tutor_id',user.id).order('created_at',{ascending:false});
+  const all=bookings||[];
+  const pending=all.filter(b=>b.status==='pending');
+  const confirmed=all.filter(b=>b.status==='confirmed');
+
+  // Stats
+  const revenue=confirmed.reduce((s,b)=>s+(b.monthly_price||0),0);
+  document.getElementById('ov-revenue').textContent=revenue.toLocaleString('fr-MA')+' DH';
+  document.getElementById('ov-students').textContent=confirmed.length;
+  document.getElementById('ov-sessions').textContent=confirmed.length*8;
+  if(tutor?.rating_avg){document.getElementById('ov-rating').textContent=tutor.rating_avg;document.getElementById('ov-rating-delta').textContent='('+( tutor.rating_count||0)+' avis)';}
+  else{document.getElementById('ov-rating').textContent='—';}
+
+  // Badge notif
+  const nb=document.getElementById('notif-res');
+  if(pending.length){nb.textContent=pending.length;nb.style.display='inline';}
+  else nb.style.display='none';
+
+  // Pending
+  const ph=pending.length?pending.map(b=>bkHTML(b,true)).join(''):'<div class="empty-state"><div class="ei">📭</div><div class="et">Aucune réservation en attente</div></div>';
+  document.getElementById('ov-pending-list').innerHTML=ph;
+  document.getElementById('res-pending').innerHTML=ph;
+
+  // Confirmed
+  document.getElementById('res-confirmed').innerHTML=confirmed.length?confirmed.map(b=>bkHTML(b,false)).join(''):'<div class="empty-state"><div class="ei">✅</div><div class="et">Aucune réservation confirmée</div></div>';
+
+  // Students
+  document.getElementById('ov-students-list').innerHTML=confirmed.slice(0,3).map((b,i)=>stRow(b,i)).join('');
+  document.getElementById('students-grid').innerHTML=confirmed.length?confirmed.map((b,i)=>stCard(b,i)).join(''):'<div class="empty-state" style="grid-column:1/-1"><div class="ei">👤</div><div class="et">Aucun étudiant actif pour l\'instant</div></div>';
+}
+
+/* ── Booking HTML ── */
+function bkHTML(b,showActions){
+  const name=b.student?.full_name||'Étudiant';
+  const c=col(name);const i=ini(name);
+  const type=b.offer_type==='solo'?'<span class="res-tag tag-solo">👤 Solo</span>':`<span class="res-tag tag-group">👥 Classe ×${b.offer_type==='class3'?3:5}</span>`;
+  const status=b.status==='pending'?'<span class="res-tag tag-pending">⏳ En attente</span>':'<span class="res-tag tag-confirmed">✅ Confirmé</span>';
+  const actions=showActions?`<div class="res-actions"><button class="btn btn-green btn-sm" onclick="doConfirm('${b.id}',this)">Confirmer</button><button class="btn btn-red btn-sm" onclick="doRefuse('${b.id}',this)">Refuser</button></div>`:'';
+  return`<div class="res-item"><div class="res-av" style="background:${c}">${i}</div><div class="res-info"><div class="res-name">${name}</div><div class="res-detail">${type}${status}<span>📅 ${b.c1_day||'—'} ${b.c1_hour||''}</span><span>📅 ${b.c2_day||'—'} ${b.c2_hour||''}</span></div></div>${actions}</div>`;
+}
+
+/* ── Student row ── */
+function stRow(b,i){
+  const name=b.student?.full_name||'Étudiant';
+  return`<div class="res-item"><div class="res-av" style="background:${col(name)}">${ini(name)}</div><div class="res-info"><div class="res-name">${name}</div><div class="res-detail"><span>${b.offer_type==='solo'?'Cours solo':'Classe'} · ${b.monthly_price||'—'} DH/mois</span></div></div><div style="font-size:.78rem;font-weight:700;color:var(--g900);flex-shrink:0">8/8 sessions</div></div>`;
+}
+
+/* ── Student card ── */
+function stCard(b,i){
+  const name=b.student?.full_name||'Étudiant';
+  const c=col(name);const in2=ini(name);
+  return`<div class="student-card"><div class="sc-top"><div class="sc-av" style="background:${c}">${in2}</div><div><div class="sc-name">${name}</div><div class="sc-detail">${b.offer_type==='solo'?'Cours solo':'Classe ×'+(b.offer_type==='class3'?3:5)} · ${b.monthly_price||'—'} DH/mois</div></div></div>
+  <div class="sc-schedule"><strong>Cours 1 :</strong> ${b.c1_day||'—'} ${b.c1_hour||''}<br><strong>Cours 2 :</strong> ${b.c2_day||'—'} ${b.c2_hour||''}</div>
+  <div><div class="sc-prog-top"><span class="sc-prog-lbl">Sessions ce mois</span><span class="sc-prog-val">8 / 8</span></div><div class="sc-bar"><div class="sc-bar-fill" style="width:100%"></div></div></div>
+  <div class="sc-actions"><button class="btn btn-outline btn-sm" style="flex:1">💬 Message</button></div></div>`;
+}
+
+/* ══ CONFIRM / REFUSE ══ */
+async function doConfirm(id,btn){
+  btn.disabled=true;btn.textContent='...';
+  await sb.from('bookings').update({status:'confirmed'}).eq('id',id);
+  showToast('✅ Réservation confirmée !');loadData();
+}
+async function doRefuse(id,btn){
+  btn.disabled=true;
+  await sb.from('bookings').update({status:'cancelled'}).eq('id',id);
+  showToast('Réservation refusée.');loadData();
+}
+
+/* ══ PROFILE ══ */
+function fillProfile(){
+  const parts=(profile?.full_name||'').split(' ');
+  document.getElementById('f-fname').value=parts[0]||'';
+  document.getElementById('f-lname').value=parts.slice(1).join(' ')||'';
+  document.getElementById('f-phone').value=profile?.phone||'';
+  document.getElementById('f-bio').value=tutor?.bio||'';
+  document.getElementById('f-tagline').value=tutor?.tagline||'';
+  if(profile?.city)document.getElementById('f-city').value=profile.city;
+  const i=ini(profile?.full_name);
+  document.getElementById('sb-initials').textContent=i;
+  document.getElementById('av-preview-big').textContent=i;
+  document.getElementById('sb-name').textContent=profile?.full_name||'Tuteur';
+  tagData={subjects:[],levels:[]};
+  (tutor?.subjects||[]).forEach(s=>pushTag('subjects',s));
+  (tutor?.levels||[]).forEach(l=>pushTag('levels',l));
+}
+
+function fillPricing(){
+  if(!tutor)return;
+  document.getElementById('p-solo').value=tutor.price_solo||600;
+  if(tutor.price_class3){document.getElementById('tog-class3').checked=true;toggleOffer('class3');document.getElementById('p-class3').value=tutor.price_class3;}
+  if(tutor.price_class5){document.getElementById('tog-class5').checked=true;toggleOffer('class5');document.getElementById('p-class5').value=tutor.price_class5;}
+  calcNet();
+}
+
+function restoreAvail(t){
+  if(t.avail_c1)avail.c1=t.avail_c1;
+  if(t.avail_ven)avail.ven=t.avail_ven;
+  if(t.avail_sam)avail.sam=t.avail_sam;
+  if(t.avail_dim)avail.dim=t.avail_dim;
+}
+
+/* ══ PLANNING ══ */
+function buildPlanning(){
+  let c1=`<div class="plan-head"><div class="plan-head-corner"></div>${C1_DAYS.map(d=>`<div class="plan-head-day">${d}</div>`).join('')}</div>`;
+  C1_HRS.forEach((h,hi)=>{c1+=`<div class="plan-row"><div class="plan-time">${h}</div>`;for(let di=0;di<4;di++){const on=avail.c1[di]&&avail.c1[di][hi];c1+=`<div class="plan-slot${on?' on':''}" onclick="togglePlan('c1',${di},${hi})">${on?'✓':''}</div>`;}c1+=`</div>`;});
+  document.getElementById('plan-c1').innerHTML=c1;
+  let ven=`<div class="plan-head"><div class="plan-head-corner"></div><div class="plan-head-day">Vendredi</div></div>`;
+  VEN_HRS.forEach((h,hi)=>{const on=avail.ven[hi];ven+=`<div class="plan-row"><div class="plan-time">${h}</div><div class="plan-slot${on?' on':''}" onclick="togglePlan('ven',0,${hi})">${on?'✓':''}</div></div>`;});
+  document.getElementById('plan-ven').innerHTML=ven;
+  let we=`<div class="plan-head"><div class="plan-head-corner"></div>${WE_DAYS.map(d=>`<div class="plan-head-day">${d}</div>`).join('')}</div>`;
+  WE_HRS.forEach((h,hi)=>{const onS=avail.sam[hi],onD=avail.dim[hi];we+=`<div class="plan-row"><div class="plan-time">${h}</div><div class="plan-slot${onS?' on':''}" onclick="togglePlan('sam',0,${hi})">${onS?'✓':''}</div><div class="plan-slot${onD?' on':''}" onclick="togglePlan('dim',0,${hi})">${onD?'✓':''}</div></div>`;});
+  document.getElementById('plan-we').innerHTML=we;
+}
+function togglePlan(grid,di,hi){if(grid==='c1')avail.c1[di][hi]=avail.c1[di][hi]?0:1;if(grid==='ven')avail.ven[hi]=avail.ven[hi]?0:1;if(grid==='sam')avail.sam[hi]=avail.sam[hi]?0:1;if(grid==='dim')avail.dim[hi]=avail.dim[hi]?0:1;buildPlanning();dirty();}
+
+/* ══ PRICING ══ */
+function toggleOffer(type){const on=document.getElementById(`tog-${type}`).checked;document.getElementById(`or-${type}`).classList.toggle('active',on);document.getElementById(`pw-${type}`).style.display=on?'flex':'none';document.getElementById(`net-${type}`).classList.toggle('show',on);calcNet();}
+function calcNet(){
+  const solo=parseInt(document.getElementById('p-solo').value)||0;
+  document.getElementById('net-solo-val').textContent=Math.round(solo*.75)+' DH';
+  const c3on=document.getElementById('tog-class3').checked,p3=parseInt(document.getElementById('p-class3').value)||0;
+  if(c3on){document.getElementById('net-class3-val').textContent=Math.round(p3*.75)+' DH';document.getElementById('net-class3-total').textContent=Math.round(p3*3*.75)+' DH/mois';}
+  const c5on=document.getElementById('tog-class5').checked,p5=parseInt(document.getElementById('p-class5').value)||0;
+  if(c5on){document.getElementById('net-class5-val').textContent=Math.round(p5*.75)+' DH';document.getElementById('net-class5-total').textContent=Math.round(p5*5*.75)+' DH/mois';}
+  let rows=`<div class="rev-row"><span class="rev-lbl">Solo</span><span class="rev-val">${Math.round(solo*.75)} DH/mois</span></div>`;
+  if(c3on)rows+=`<div class="rev-row"><span class="rev-lbl">Classe ×3</span><span class="rev-val">${Math.round(p3*3*.75)} DH/mois</span></div>`;
+  if(c5on)rows+=`<div class="rev-row"><span class="rev-lbl">Classe ×5</span><span class="rev-val">${Math.round(p5*5*.75)} DH/mois</span></div>`;
+  rows+=`<div class="rev-row"><span class="rev-lbl">Total max</span><span class="rev-val">${Math.round(solo*.75)+(c3on?Math.round(p3*3*.75):0)+(c5on?Math.round(p5*5*.75):0)} DH/mois</span></div>`;
+  document.getElementById('rev-rows').innerHTML=rows;
+}
+
+/* ══ TAGS ══ */
+function addTag(e,group){if(e.key!=='Enter')return;const inp=document.getElementById(`ti-${group}`);const v=inp.value.trim();if(!v||tagData[group].includes(v)){inp.value='';return;}pushTag(group,v);inp.value='';dirty();}
+function pushTag(group,val){tagData[group].push(val);const wrap=document.getElementById(`tags-${group}`);const inp=document.getElementById(`ti-${group}`);const el=document.createElement('span');el.className='t-item';el.innerHTML=`${val}<span class="t-rm" onclick="rmTag('${group}','${val}',this.parentElement)">×</span>`;wrap.insertBefore(el,inp);}
+function rmTag(group,val,el){tagData[group]=tagData[group].filter(t=>t!==val);el.remove();dirty();}
+
+/* ══ AVATAR ══ */
+function previewAv(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{document.getElementById('av-preview-big').innerHTML=`<img src="${e.target.result}">`;const av=document.getElementById('sb-initials');av.style.backgroundImage=`url(${e.target.result})`;av.style.backgroundSize='cover';av.textContent='';};reader.readAsDataURL(file);dirty();}
+
+/* ══ NAV ══ */
+const TITLES={overview:'Vue d\'ensemble',reservations:'Réservations',students:'Mes étudiants',profile:'Infos & Bio',pricing:'Formules & Prix',planning:'Disponibilités'};
+function navigate(section){Object.keys(TITLES).forEach(k=>{const el=document.getElementById(`s-${k}`);if(el)el.style.display=k===section?'block':'none';});document.querySelectorAll('.sb-link').forEach(l=>l.classList.toggle('active',l.dataset.section===section));document.getElementById('page-title').textContent=TITLES[section]||section;if(section==='planning')buildPlanning();}
+document.querySelectorAll('.sb-link').forEach(l=>l.addEventListener('click',()=>navigate(l.dataset.section)));
+
+/* ══ SAVE ══ */
+function dirty(){isDirty=true;document.getElementById('save-bar').classList.add('visible');}
+function cancelChanges(){isDirty=false;document.getElementById('save-bar').classList.remove('visible');fillProfile();fillPricing();showToast('Modifications annulées.');}
+async function saveAll(){
+  const btn=document.getElementById('save-btn');btn.innerHTML='<span class="spinner"></span>Sauvegarde...';btn.disabled=true;
+  try{
+    await sb.from('profiles').update({full_name:`${document.getElementById('f-fname').value.trim()} ${document.getElementById('f-lname').value.trim()}`.trim(),phone:document.getElementById('f-phone').value.trim(),city:document.getElementById('f-city').value}).eq('id',user.id);
+    await sb.from('tutors').upsert({id:user.id,bio:document.getElementById('f-bio').value.trim(),tagline:document.getElementById('f-tagline').value.trim(),subjects:tagData.subjects,levels:tagData.levels,price_solo:parseInt(document.getElementById('p-solo').value)||300,price_class3:document.getElementById('tog-class3').checked?parseInt(document.getElementById('p-class3').value)||null:null,price_class5:document.getElementById('tog-class5').checked?parseInt(document.getElementById('p-class5').value)||null:null,avail_c1:avail.c1,avail_ven:avail.ven,avail_sam:avail.sam,avail_dim:avail.dim,is_active:true});
+    isDirty=false;document.getElementById('save-bar').classList.remove('visible');showToast('✅ Profil sauvegardé !');
+  }catch(err){showToast('❌ Erreur : '+err.message);}
+  btn.innerHTML='💾 Sauvegarder';btn.disabled=false;
+}
+
+/* ══ UTILS ══ */
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+async function logout(){await sb.auth.signOut();location.href='auth.html';}
+window.addEventListener('beforeunload',e=>{if(isDirty){e.preventDefault();e.returnValue='';}});
+</script>
+</body>
+</html>
