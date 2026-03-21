@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon espace étudiant — Ustad</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#f3f4f6;color:#111827;min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:'Inter',sans-serif;}
+:root{
+  --navy:#0d1f3c;--blue:#1a56db;--blue-dk:#1344b8;--blue-lt:#eff6ff;--blue-bd:#bfdbfe;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;--g400:#9ca3af;
+  --g500:#6b7280;--g700:#374151;--g900:#111827;--yellow:#f59e0b;
+  --green:#16a34a;--green-lt:#f0fdf4;--green-bd:#bbf7d0;
+  --red:#dc2626;--red-lt:#fef2f2;--red-bd:#fecaca;--sb-w:256px;
+}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:var(--sb-w);flex-shrink:0;background:var(--navy);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:200;overflow-y:auto;}
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;}
+.sb-logo{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.sb-logo span{color:#93c5fd;}
+.sb-role{font-size:.62rem;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
+.sb-user{margin:14px 12px;padding:12px;background:rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;gap:10px;}
+.sb-av{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;}
+.sb-uname{font-size:.83rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-usub{font-size:.68rem;color:rgba(255,255,255,.4);margin-top:2px;}
+.sb-nav{flex:1;padding:8px 12px;}
+.sb-group-lbl{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.12em;padding:12px 8px 6px;}
+.sb-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:.85rem;font-weight:500;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;margin-bottom:1px;}
+.sb-link:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+.sb-link.active{background:rgba(26,86,219,.4);color:#fff;font-weight:700;}
+.sb-link .ico{font-size:.95rem;width:22px;text-align:center;flex-shrink:0;}
+.sb-notif{background:var(--red);color:#fff;font-size:.6rem;font-weight:800;padding:1px 6px;border-radius:100px;min-width:18px;text-align:center;margin-left:auto;}
+.sb-bottom{padding:12px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-logout{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:.82rem;font-weight:500;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;width:100%;}
+.sb-logout:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);}
+.main{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--g200);height:60px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.topbar-title{font-size:1rem;font-weight:800;color:var(--g900);}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.btn{font-size:.82rem;font-weight:700;padding:8px 16px;border-radius:8px;transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.btn-primary{background:var(--blue);color:#fff;}.btn-primary:hover{background:var(--blue-dk);}
+.btn-outline{border:1.5px solid var(--g200);color:var(--g700);background:#fff;}.btn-outline:hover{border-color:var(--g700);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#15803d;}
+.btn-sm{font-size:.75rem;padding:6px 12px;}
+.btn-red-soft{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}.btn-red-soft:hover{background:var(--red);color:#fff;}
+.content{padding:24px 28px 80px;}
+.card{background:#fff;border:1px solid var(--g200);border-radius:14px;overflow:hidden;margin-bottom:18px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:.92rem;font-weight:800;color:var(--g900);}
+.card-desc{font-size:.75rem;color:var(--g400);margin-top:2px;}
+.card-body{padding:20px;}.card-body.np{padding:0;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0;}
+.stat.blue::before{background:var(--blue);}.stat.green::before{background:var(--green);}.stat.yellow::before{background:var(--yellow);}.stat.navy::before{background:var(--navy);}
+.stat-icon{font-size:1.3rem;margin-bottom:10px;}
+.stat-val{font-size:1.7rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;line-height:1;}
+.stat-lbl{font-size:.73rem;color:var(--g400);margin-top:5px;font-weight:500;}
+.stat-delta{font-size:.7rem;font-weight:600;margin-top:6px;color:var(--g400);}
+.tutor-banner{background:linear-gradient(135deg,var(--navy) 0%,#1e3a5f 100%);border-radius:14px;padding:24px;margin-bottom:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:relative;overflow:hidden;}
+.tutor-banner::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(26,86,219,.2);pointer-events:none;}
+.tb-av{width:64px;height:64px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--blue),#60a5fa);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#fff;border:3px solid rgba(255,255,255,.2);overflow:hidden;}
+.tb-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.tb-info{flex:1;}
+.tb-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.tb-name{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.tb-subject{font-size:.82rem;color:rgba(255,255,255,.65);margin-top:3px;}
+.tb-meta{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;}
+.tb-meta-item{font-size:.75rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;}
+.tb-actions{display:flex;gap:8px;flex-shrink:0;}
+.tb-btn{font-size:.8rem;font-weight:700;padding:9px 18px;border-radius:8px;transition:all .15s;cursor:pointer;border:none;}
+.tb-btn-msg{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);}.tb-btn-msg:hover{background:rgba(255,255,255,.2);}
+.tb-btn-profile{background:#fff;color:var(--navy);}.tb-btn-profile:hover{background:var(--blue-lt);}
+.schedule-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:4px;}
+.sw-day{text-align:center;}
+.sw-day-name{font-size:.65rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.sw-slot{border-radius:8px;padding:8px 4px;text-align:center;font-size:.7rem;font-weight:600;border:1.5px solid var(--g200);color:var(--g300);background:#fff;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+.sw-slot.has-session{background:var(--blue-lt);border-color:var(--blue-bd);color:var(--blue);}
+.sw-slot.today{border-color:var(--blue);box-shadow:0 0 0 2px rgba(26,86,219,.15);}
+.sw-slot.has-session.today{background:var(--blue);border-color:var(--blue);color:#fff;}
+.sw-slot-time{font-size:.65rem;font-weight:700;}
+.sw-slot-label{font-size:.6rem;opacity:.8;}
+.session-item{display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--g100);transition:background .12s;}
+.session-item:last-child{border-bottom:none;}.session-item:hover{background:var(--g50);}
+.si-date{width:46px;text-align:center;flex-shrink:0;}
+.si-day{font-size:1.1rem;font-weight:900;color:var(--navy);line-height:1;}
+.si-month{font-size:.62rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;}
+.si-info{flex:1;}
+.si-title{font-size:.88rem;font-weight:700;color:var(--g900);}
+.si-detail{font-size:.73rem;color:var(--g400);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;}
+.si-badge{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:100px;}
+.badge-done{background:var(--green-lt);color:#15803d;}.badge-upcoming{background:var(--blue-lt);color:var(--blue);}.badge-missed{background:var(--red-lt);color:var(--red);}
+.si-note{font-size:.75rem;font-weight:600;color:var(--g500);margin-left:auto;flex-shrink:0;}
+.progress-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.prog-card{border:1px solid var(--g200);border-radius:12px;padding:16px;}
+.pc-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.pc-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.pc-name{font-size:.88rem;font-weight:700;color:var(--g900);}
+.pc-level{font-size:.72rem;color:var(--g400);margin-top:1px;}
+.pc-bar-top{display:flex;justify-content:space-between;font-size:.72rem;margin-bottom:5px;}
+.pc-bar-lbl{color:var(--g500);}.pc-bar-val{font-weight:700;color:var(--g700);}
+.pc-bar{height:7px;background:var(--g100);border-radius:100px;overflow:hidden;}
+.pc-bar-fill{height:100%;border-radius:100px;transition:width .4s;}
+.pc-sessions{font-size:.72rem;color:var(--g400);text-align:right;}
+.sub-card{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--green-bd);border-radius:14px;padding:20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.sub-active{display:flex;align-items:center;gap:8px;}
+.sub-dot{width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.sub-label{font-size:.75rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;}
+.sub-name{font-size:1rem;font-weight:800;color:var(--navy);margin-top:2px;}
+.sub-detail{font-size:.78rem;color:var(--g500);margin-top:3px;}
+.sub-price{text-align:right;}
+.sub-amount{font-size:1.5rem;font-weight:900;color:var(--navy);letter-spacing:-.03em;line-height:1;}
+.sub-per{font-size:.75rem;color:var(--g400);margin-top:2px;}
+.sub-renew{font-size:.72rem;color:var(--g500);margin-top:4px;}
+.find-banner{background:var(--blue-lt);border:1.5px dashed var(--blue-bd);border-radius:14px;padding:28px;text-align:center;margin-bottom:18px;}
+.find-banner h3{font-size:1rem;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.find-banner p{font-size:.83rem;color:var(--g500);margin-bottom:16px;}
+.msg-item{display:flex;align-items:center;gap:13px;padding:13px 20px;border-bottom:1px solid var(--g100);cursor:pointer;transition:background .12s;}
+.msg-item:last-child{border-bottom:none;}.msg-item:hover{background:var(--g50);}.msg-item.unread{background:#fafbff;}
+.msg-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.88rem;font-weight:800;color:#fff;}
+.msg-info{flex:1;min-width:0;}
+.msg-name{font-size:.85rem;font-weight:700;color:var(--g900);}
+.msg-preview{font-size:.75rem;color:var(--g400);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.msg-item.unread .msg-preview{color:var(--g700);font-weight:500;}
+.msg-meta{text-align:right;flex-shrink:0;}
+.msg-time{font-size:.68rem;color:var(--g400);}
+.msg-badge{width:8px;height:8px;border-radius:50%;background:var(--blue);margin:4px auto 0;}
+.settings-section{margin-bottom:24px;}
+.settings-lbl{font-size:.72rem;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--g200);}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--g100);}
+.settings-row:last-child{border-bottom:none;}
+.sr-name{font-size:.88rem;font-weight:600;color:var(--g900);}
+.sr-desc{font-size:.75rem;color:var(--g400);margin-top:2px;}
+.tog{position:relative;width:38px;height:21px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;position:absolute;}
+.tog-track{position:absolute;inset:0;background:var(--g200);border-radius:100px;cursor:pointer;transition:background .18s;}
+.tog-track::after{content:'';position:absolute;width:15px;height:15px;top:3px;left:3px;background:#fff;border-radius:50%;transition:transform .18s;}
+.tog input:checked~.tog-track{background:var(--blue);}
+.tog input:checked~.tog-track::after{transform:translateX(17px);}
+.input{padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.875rem;color:var(--g900);outline:none;transition:border-color .15s;background:#fff;width:100%;}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+label{font-size:.72rem;font-weight:700;color:var(--g700);letter-spacing:.01em;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.empty-state{text-align:center;padding:36px 20px;color:var(--g400);}
+.empty-state .ei{font-size:2.2rem;margin-bottom:8px;}
+.empty-state .et{font-size:.85rem;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@media(max-width:1024px){.stats-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:768px){:root{--sb-w:0px;}.sidebar{display:none;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div><div class="sb-logo">Ustad<span>.</span></div><div class="sb-role">Espace étudiant</div></div>
+    <a href="index.html" style="font-size:.7rem;color:rgba(255,255,255,.3);" onmouseover="this.style.color='rgba(255,255,255,.7)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">← Site</a>
+  </div>
+  <div class="sb-user">
+    <div class="sb-av" id="sb-initials">SA</div>
+    <div style="min-width:0;">
+      <div class="sb-uname" id="sb-name">Chargement...</div>
+      <div class="sb-usub" id="sb-sub">Chargement...</div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group-lbl">Principal</div>
+    <div class="sb-link active" data-section="overview"><span class="ico">📊</span>Vue d'ensemble</div>
+    <div class="sb-link" data-section="planning"><span class="ico">📅</span>Mon planning</div>
+    <div class="sb-link" data-section="sessions"><span class="ico">🎥</span>Mes sessions</div>
+    <div class="sb-link" data-section="progress"><span class="ico">📈</span>Ma progression</div>
+    <div class="sb-group-lbl">Compte</div>
+    <div class="sb-link" data-section="messages"><span class="ico">💬</span>Messages<span class="sb-notif" id="notif-msg" style="display:none">2</span></div>
+    <div class="sb-link" data-section="subscription"><span class="ico">💳</span>Mon abonnement</div>
+    <div class="sb-link" data-section="settings"><span class="ico">⚙️</span>Paramètres</div>
+  </nav>
+  <div class="sb-bottom">
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:.8rem;font-weight:500;color:rgba(255,255,255,.4);transition:all .15s;margin-bottom:4px;" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.75)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.4)'">
+      <span>🔍</span> Trouver un tuteur
+    </a>
+    <button class="sb-logout" onclick="logout()"><span>🚪</span> Déconnexion</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Vue d'ensemble</div>
+    <div class="topbar-right">
+      <a href="index.html"><button class="btn btn-primary">🔍 Trouver un tuteur</button></a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="s-overview">
+      <!-- Sub card — rempli dynamiquement -->
+      <div id="sub-banner"></div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat blue"><div class="stat-icon">📅</div><div class="stat-val" id="st-sessions">—</div><div class="stat-lbl">Sessions ce mois</div><div class="stat-delta">2 sessions / semaine</div></div>
+        <div class="stat green"><div class="stat-icon">✅</div><div class="stat-val" id="st-done">—</div><div class="stat-lbl">Sessions complétées</div></div>
+        <div class="stat yellow"><div class="stat-icon">⭐</div><div class="stat-val" id="st-rating">—</div><div class="stat-lbl">Note du tuteur</div><div class="stat-delta" id="st-rating-stars"></div></div>
+        <div class="stat navy"><div class="stat-icon">📚</div><div class="stat-val" id="st-subjects">—</div><div class="stat-lbl">Matières suivies</div><div class="stat-delta" id="st-subjects-lbl"></div></div>
+      </div>
+
+      <!-- Tutor banner — rempli dynamiquement -->
+      <div id="tutor-banner-wrap"></div>
+
+      <!-- Prochaine session -->
+      <div id="next-session-wrap"></div>
+
+      <!-- Sessions récentes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Historique récent</div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('sessions')">Tout voir →</button>
+        </div>
+        <div class="card-body np" id="ov-sessions-list"></div>
+      </div>
+    </div>
+
+    <!-- PLANNING -->
+    <div id="s-planning" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">📅 Mon planning de la semaine</div></div>
+        </div>
+        <div class="card-body">
+          <div style="overflow-x:auto;"><div style="min-width:500px;">
+            <div class="schedule-week" id="week-grid"></div>
+            <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--g400)"><div style="width:11px;height:11px;border-radius:3px;background:var(--blue)"></div>Session prévue</div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📅 Mes créneaux récurrents</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="slots-grid"></div>
+          <div style="margin-top:14px;padding:10px 13px;background:var(--g50);border-radius:8px;font-size:.78rem;color:var(--g500);line-height:1.6;">
+            ℹ️ Pour modifier tes créneaux, envoie un message à ton tuteur ou contacte le support Ustad.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div id="s-sessions" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🎥 Toutes mes sessions</div></div>
+        <div class="card-body np" id="all-sessions-list"></div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div id="s-progress" style="display:none">
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">📈 Ma progression</div><div class="card-desc">Par matière suivie</div></div></div>
+        <div class="card-body"><div class="progress-grid" id="progress-grid"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 Sessions ce mois</div></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:flex-end;gap:6px;height:100px;padding:0 8px;" id="sessions-chart"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;padding:0 8px;">
+            <span style="font-size:.65rem;color:var(--g400)">S1</span>
+            <span style="font-size:.65rem;color:var(--g400)">S2</span>
+            <span style="font-size:.65rem;color:var(--g400)">S3</span>
+            <span style="font-size:.65rem;color:var(--g400)">S4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="s-messages" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">💬 Messages</div></div>
+        <div class="card-body np" id="messages-list"></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTION -->
+    <div id="s-subscription" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">💳 Mon abonnement actuel</div></div>
+        <div class="card-body" id="sub-detail-body">
+          <div style="text-align:center;padding:24px;color:var(--g400)">Chargement...</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🧾 Historique des paiements</div></div>
+        <div class="card-body np" id="billing-history"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="s-settings" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">⚙️ Paramètres du compte</div></div>
+        <div class="card-body">
+          <div class="settings-section">
+            <div class="settings-lbl">Informations personnelles</div>
+            <div class="field-row">
+              <div class="field"><label>Prénom</label><input class="input" type="text" id="s-fname" placeholder="Sara"></div>
+              <div class="field"><label>Nom</label><input class="input" type="text" id="s-lname" placeholder="Amrani"></div>
+            </div>
+            <div class="field"><label>Email</label><input class="input" type="email" id="s-email" placeholder="sara@email.com" disabled style="opacity:.6"></div>
+            <div class="field"><label>Téléphone</label><input class="input" type="tel" id="s-phone" placeholder="+212 6XX XXX XXX"></div>
+            <div class="field">
+              <label>Ville</label>
+              <select class="input" id="s-city">
+                <option value="">Sélectionne ta ville</option>
+                <option>Casablanca</option><option>Rabat</option><option>Marrakech</option>
+                <option>Fès</option><option>Tanger</option><option>Agadir</option>
+                <option>Meknès</option><option>Oujda</option><option>Autre</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 Sauvegarder</button>
+          </div>
+          <div class="settings-section">
+            <div class="settings-lbl">Notifications</div>
+            <div class="settings-row"><div><div class="sr-name">Rappel de session</div><div class="sr-desc">30 minutes avant chaque session</div></div><label class="tog"><input type="checkbox" checked><div class="tog-track"></div></label></div>
+            <div class="settings-row"><div><div class="sr-name">Messages du tuteur</div><div class="sr-desc">Quand le tuteur t'envoie un message</div></div><label class="tog"><input type="checkbox" checked><div class="tog-track"></div></label></div>
+            <div class="settings-row"><div><div class="sr-name">Résumé hebdomadaire</div><div class="sr-desc">Récap de ta progression chaque dimanche</div></div><label class="tog"><input type="checkbox"><div class="tog-track"></div></label></div>
+          </div>
+          <div class="settings-section">
+            <div class="settings-lbl">Sécurité</div>
+            <div class="settings-row"><div><div class="sr-name">Changer le mot de passe</div><div class="sr-desc">Reçois un lien par email</div></div><button class="btn btn-outline btn-sm" onclick="resetPwd()">Modifier →</button></div>
+            <div class="settings-row"><div><div class="sr-name" style="color:var(--red)">Supprimer le compte</div><div class="sr-desc">Action irréversible</div></div><button class="btn btn-red-soft btn-sm">Supprimer</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = 'https://phcsftysslpiiisqjwhi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoY3NmdHlzc2xwaWlpc3Fqd2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjU1ODMsImV4cCI6MjA4OTIwMTU4M30.8reYXjUdrgjLpxgsYsAfP3H0yf_wTABQHZDYWY_fS8Q';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+let currentUser=null, currentProfile=null, activeBooking=null;
+
+function ini(n){return(n||'US').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}
+
+/* ══ INIT ══ */
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='auth.html';return;}
+  currentUser=session.user;
+
+  const{data:p}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  currentProfile=p;
+  if(p?.role==='tutor'){location.href='dashboard-tutor.html';return;}
+
+  // Sidebar
+  const name=p?.full_name||'Étudiant';
+  document.getElementById('sb-initials').textContent=ini(name);
+  document.getElementById('sb-name').textContent=name;
+
+  // Settings form
+  document.getElementById('s-fname').value=name.split(' ')[0]||'';
+  document.getElementById('s-lname').value=name.split(' ').slice(1).join(' ')||'';
+  document.getElementById('s-email').value=p?.email||'';
+  document.getElementById('s-phone').value=p?.phone||'';
+  if(p?.city)document.getElementById('s-city').value=p.city;
+
+  // Charge la réservation active
+  await loadBooking();
+})();
+
+/* ══ LOAD BOOKING ══ */
+async function loadBooking(){
+  const{data:bookings}=await sb
+    .from('bookings')
+    .select('*,tutor:tutors!tutor_id(*,profile:profiles(full_name,avatar_url,city))')
+    .eq('student_id',currentUser.id)
+    .eq('status','confirmed')
+    .order('created_at',{ascending:false})
+    .limit(1);
+
+  activeBooking=bookings?.[0]||null;
+
+  if(activeBooking){
+    document.getElementById('sb-sub').textContent='Abonnement actif';
+    renderWithBooking(activeBooking);
+  } else {
+    document.getElementById('sb-sub').textContent='Pas d\'abonnement actif';
+    renderWithoutBooking();
+  }
+
+  // Charge les données mock (sessions/progress — pas encore de vraie table)
+  buildSessionsList(activeBooking);
+  buildProgress(activeBooking);
+  buildMessages(activeBooking);
+}
+
+/* ══ AVEC ABONNEMENT ══ */
+function renderWithBooking(b){
+  const tutor=b.tutor;
+  const tutorName=tutor?.profile?.full_name||'Tuteur';
+  const tutorInitials=ini(tutorName);
+  const offerLabel=b.offer_type==='solo'?'Cours solo':`Classe ×${b.offer_type==='class3'?3:5}`;
+  const subjects=(tutor?.subjects||[]).slice(0,3).join(' · ')||'Matières variées';
+  const rating=tutor?.rating_avg||'—';
+  const ratingCount=tutor?.rating_count||0;
+
+  // Sub banner
+  document.getElementById('sub-banner').innerHTML=`
+    <div class="sub-card">
+      <div>
+        <div class="sub-active"><div class="sub-dot"></div><div class="sub-label">Abonnement actif</div></div>
+        <div class="sub-name">${offerLabel} · ${tutorName}</div>
+        <div class="sub-detail">${subjects}</div>
+      </div>
+      <div class="sub-price">
+        <div class="sub-amount">${b.monthly_price||'—'} DH</div>
+        <div class="sub-per">/mois</div>
+      </div>
+    </div>`;
+
+  // Stats
+  document.getElementById('st-sessions').textContent='8';
+  document.getElementById('st-done').textContent='6';
+  if(rating!=='—'){
+    document.getElementById('st-rating').textContent=rating;
+    document.getElementById('st-rating-stars').textContent='★★★★★';
+  }
+  const subs=tutor?.subjects||[];
+  document.getElementById('st-subjects').textContent=subs.length||'—';
+  document.getElementById('st-subjects-lbl').textContent=subs.slice(0,2).join(' · ');
+
+  // Avatar tuteur
+  const avHTML=tutor?.profile?.avatar_url
+    ?`<img src="${tutor.profile.avatar_url}">`
+    :tutorInitials;
+
+  // Tutor banner
+  document.getElementById('tutor-banner-wrap').innerHTML=`
+    <div class="tutor-banner">
+      <div class="tb-av">${avHTML}</div>
+      <div class="tb-info">
+        <div class="tb-label">Mon tuteur</div>
+        <div class="tb-name">${tutorName}</div>
+        <div class="tb-subject">${subjects}</div>
+        <div class="tb-meta">
+          ${rating!=='—'?`<span class="tb-meta-item">⭐ ${rating} (${ratingCount} avis)</span>`:''}
+          <span class="tb-meta-item">📅 Cours 1 : ${b.c1_day||'—'} ${b.c1_hour||''}</span>
+          <span class="tb-meta-item">📅 Cours 2 : ${b.c2_day||'—'} ${b.c2_hour||''}</span>
+        </div>
+      </div>
+      <div class="tb-actions">
+        <button class="tb-btn tb-btn-msg" onclick="navigate('messages')">💬 Message</button>
+        <button class="tb-btn tb-btn-profile" onclick="window.open('tutor-profile.html?id=${b.tutor_id}','_blank')">👤 Profil</button>
+      </div>
+    </div>`;
+
+  // Prochaine session
+  const today=new Date();
+  const nextDay=today.getDate()+2;
+  const nextMonth=today.toLocaleString('fr-FR',{month:'short'});
+  document.getElementById('next-session-wrap').innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">🎥 Prochaine session</div><div class="card-desc">Dans 2 jours</div></div>
+        <button class="btn btn-primary btn-sm">Rejoindre →</button>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="background:var(--blue-lt);border:1.5px solid var(--blue-bd);border-radius:10px;padding:14px 18px;text-align:center;flex-shrink:0;">
+            <div style="font-size:1.6rem;font-weight:900;color:var(--blue);line-height:1;">${nextDay}</div>
+            <div style="font-size:.65rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">${nextMonth}</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:.9rem;font-weight:800;color:var(--g900);">${b.c1_day||'—'} · ${b.c1_hour||'—'} → fin 1h30</div>
+            <div style="font-size:.78rem;color:var(--g500);margin-top:4px;">${offerLabel} · ${tutorName}</div>
+            <div style="font-size:.75rem;color:var(--g400);margin-top:6px;">🎥 Lien visio envoyé par email 30min avant</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:.75rem;color:var(--g400);margin-bottom:6px;">Session 7/8 ce mois</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Planning
+  buildWeekGrid(b);
+  buildSlotsGrid(b);
+
+  // Subscription detail
+  document.getElementById('sub-detail-body').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:16px;background:var(--green-lt);border:1.5px solid var(--green-bd);border-radius:10px;margin-bottom:16px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;"><div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div><span style="font-size:.72rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;">Actif</span></div>
+        <div style="font-size:1rem;font-weight:800;color:var(--navy);">${offerLabel} · ${tutorName}</div>
+        <div style="font-size:.8rem;color:var(--g500);margin-top:3px;">${subjects} · 8 sessions/mois</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1.6rem;font-weight:900;color:var(--navy);letter-spacing:-.04em;">${b.monthly_price||'—'} DH</div>
+        <div style="font-size:.75rem;color:var(--g400);">/mois</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="text-align:center;padding:12px;background:var(--g50);border-radius:9px;border:1px solid var(--g200);"><div style="font-size:1.1rem;font-weight:900;color:var(--g900);">8</div><div style="font-size:.7rem;color:var(--g400);margin-top:2px;">Sessions/mois</div></div>
+      <div style="text-align:center;padding:12px;background:var(--g50);border-radius:9px;border:1px solid var(--g200);"><div style="font-size:1.1rem;font-weight:900;color:var(--g900);">1h30</div><div style="font-size:.7rem;color:var(--g400);margin-top:2px;">Par session</div></div>
+      <div style="text-align:center;padding:12px;background:var(--g50);border-radius:9px;border:1px solid var(--g200);"><div style="font-size:1.1rem;font-weight:900;color:var(--g900);">✅</div><div style="font-size:.7rem;color:var(--g400);margin-top:2px;">Confirmé</div></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="index.html"><button class="btn btn-outline" style="flex:1;">🔄 Changer de tuteur</button></a>
+      <button class="btn btn-red-soft" style="flex:1;" onclick="cancelSub('${b.id}')">⛔ Résilier l'abonnement</button>
+    </div>`;
+
+  // Billing history
+  document.getElementById('billing-history').innerHTML=`
+    <div class="session-item">
+      <div class="si-date"><div class="si-day">01</div><div class="si-month">${new Date().toLocaleString('fr-FR',{month:'short'}).toUpperCase()}</div></div>
+      <div class="si-info"><div class="si-title">Abonnement ${new Date().toLocaleString('fr-FR',{month:'long',year:'numeric'})}</div><div class="si-detail"><span>${offerLabel} · ${tutorName}</span></div></div>
+      <div style="display:flex;align-items:center;gap:10px;"><span class="si-badge badge-done">Payé</span><span style="font-size:.88rem;font-weight:800;color:var(--g900);">${b.monthly_price||'—'} DH</span></div>
+    </div>`;
+}
+
+/* ══ SANS ABONNEMENT ══ */
+function renderWithoutBooking(){
+  document.getElementById('sub-banner').innerHTML=`
+    <div class="find-banner">
+      <h3>Tu n'as pas encore de tuteur 🎓</h3>
+      <p>Trouve le tuteur parfait parmi nos +1200 tuteurs vérifiés et commence dès cette semaine.</p>
+      <a href="index.html"><button class="btn btn-primary">🔍 Trouver mon tuteur →</button></a>
+    </div>`;
+  ['st-sessions','st-done','st-rating','st-subjects'].forEach(id=>{document.getElementById(id).textContent='—';});
+  document.getElementById('tutor-banner-wrap').innerHTML='';
+  document.getElementById('next-session-wrap').innerHTML='';
+  document.getElementById('sub-detail-body').innerHTML=`
+    <div class="empty-state"><div class="ei">💳</div><div class="et">Aucun abonnement actif. <a href="index.html" style="color:var(--blue);font-weight:600">Trouver un tuteur →</a></div></div>`;
+  document.getElementById('billing-history').innerHTML=`<div class="empty-state"><div class="et">Aucun paiement</div></div>`;
+}
+
+/* ══ WEEK GRID ══ */
+const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const DAY_MAP={Lundi:0,Mardi:1,Mercredi:2,Jeudi:3,Vendredi:4,Samedi:5,Dimanche:6};
+const TODAY_IDX=new Date().getDay()===0?6:new Date().getDay()-1;
+
+function buildWeekGrid(b){
+  const sessionDays=[];
+  if(b){
+    if(b.c1_day&&DAY_MAP[b.c1_day]!==undefined)sessionDays.push({idx:DAY_MAP[b.c1_day],time:b.c1_hour||'—'});
+    if(b.c2_day&&DAY_MAP[b.c2_day]!==undefined)sessionDays.push({idx:DAY_MAP[b.c2_day],time:b.c2_hour||'—'});
+  }
+  document.getElementById('week-grid').innerHTML=DAYS.map((day,i)=>{
+    const s=sessionDays.find(x=>x.idx===i);
+    const isToday=i===TODAY_IDX;
+    let cls='sw-slot'+(s?' has-session':'')+(isToday?' today':'');
+    const inner=s?`<div class="sw-slot-time">${s.time}</div><div class="sw-slot-label">1h30</div>`:'';
+    return`<div class="sw-day"><div class="sw-day-name">${day}</div><div class="${cls}">${inner}</div></div>`;
+  }).join('');
+}
+
+function buildSlotsGrid(b){
+  if(!b){document.getElementById('slots-grid').innerHTML='';return;}
+  document.getElementById('slots-grid').innerHTML=`
+    <div style="background:var(--blue-lt);border:1.5px solid var(--blue-bd);border-radius:10px;padding:14px 16px;">
+      <div style="font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Cours 1</div>
+      <div style="font-size:.95rem;font-weight:800;color:var(--navy);">${b.c1_day||'—'} · ${b.c1_hour||'—'}</div>
+      <div style="font-size:.75rem;color:var(--g500);margin-top:3px;">Lun–Jeu · 1h30 · Chaque semaine</div>
+    </div>
+    <div style="background:var(--blue-lt);border:1.5px solid var(--blue-bd);border-radius:10px;padding:14px 16px;">
+      <div style="font-size:.68rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Cours 2</div>
+      <div style="font-size:.95rem;font-weight:800;color:var(--navy);">${b.c2_day||'—'} · ${b.c2_hour||'—'}</div>
+      <div style="font-size:.75rem;color:var(--g500);margin-top:3px;">Ven–Dim · 1h30 · Chaque semaine</div>
+    </div>`;
+}
+
+/* ══ SESSIONS (données illustratives basées sur la vraie réservation) ══ */
+function buildSessionsList(b){
+  if(!b){
+    const empty='<div class="empty-state"><div class="ei">📭</div><div class="et">Aucune session pour l\'instant</div></div>';
+    document.getElementById('ov-sessions-list').innerHTML=empty;
+    document.getElementById('all-sessions-list').innerHTML=empty;
+    return;
+  }
+  const tutorName=b.tutor?.profile?.full_name||'Tuteur';
+  const label=b.offer_type==='solo'?'Cours solo':`Classe ×${b.offer_type==='class3'?3:5}`;
+  const today=new Date();
+  const DEMO=[
+    {d:today.getDate()-4,m:today,title:'Session avec '+tutorName,detail:`${label} · ${b.c1_day} ${b.c1_hour}`,status:'done',note:'Session 6/8'},
+    {d:today.getDate()-7,m:today,title:'Session avec '+tutorName,detail:`${label} · ${b.c2_day} ${b.c2_hour}`,status:'done',note:'Session 5/8'},
+    {d:today.getDate()+3,m:today,title:'Session avec '+tutorName,detail:`${label} · ${b.c1_day} ${b.c1_hour}`,status:'upcoming',note:'Session 7/8'},
+  ];
+  function sessHTML(s){
+    const dt=new Date(s.m);dt.setDate(s.d);
+    const bc=s.status==='done'?'badge-done':s.status==='upcoming'?'badge-upcoming':'badge-missed';
+    const bt=s.status==='done'?'✅ Complétée':s.status==='upcoming'?'🎥 À venir':'❌ Manquée';
+    const action=s.status==='upcoming'?'<button class="btn btn-primary btn-sm">Rejoindre</button>':'';
+    return`<div class="session-item">
+      <div class="si-date"><div class="si-day">${Math.abs(s.d)}</div><div class="si-month">${dt.toLocaleString('fr-FR',{month:'short'}).toUpperCase()}</div></div>
+      <div class="si-info"><div class="si-title">${s.title}</div><div class="si-detail"><span>${s.detail}</span></div></div>
+      <span class="si-badge ${bc}">${bt}</span>
+      ${action?`<div style="margin-left:8px">${action}</div>`:''}
+      <div class="si-note">${s.note}</div>
+    </div>`;
+  }
+  document.getElementById('ov-sessions-list').innerHTML=DEMO.slice(0,3).map(sessHTML).join('');
+  document.getElementById('all-sessions-list').innerHTML=DEMO.map(sessHTML).join('');
+}
+
+/* ══ PROGRESS ══ */
+function buildProgress(b){
+  const subjects=b?.tutor?.subjects||['Matière 1','Matière 2'];
+  const colors=['#1a56db','#16a34a','#ea580c','#7c3aed'];
+  const icons=['📐','⚗️','🧪','📘'];
+  const bgs=['#eff6ff','#f0fdf4','#fff7ed','#f5f3ff'];
+  document.getElementById('progress-grid').innerHTML=subjects.slice(0,4).map((s,i)=>{
+    const pct=60+i*5;
+    return`<div class="prog-card">
+      <div class="pc-top">
+        <div class="pc-icon" style="background:${bgs[i]}">${icons[i]}</div>
+        <div><div class="pc-name">${s}</div></div>
+      </div>
+      <div class="pc-bar-top"><span class="pc-bar-lbl">Progression</span><span class="pc-bar-val">${pct}%</span></div>
+      <div class="pc-bar"><div class="pc-bar-fill" style="width:${pct}%;background:${colors[i]}"></div></div>
+      <div class="pc-sessions">6 sessions complétées</div>
+    </div>`;
+  }).join('')||'<div style="color:var(--g400);font-size:.85rem">Aucune matière renseignée.</div>';
+
+  const weeks=[2,2,1,1];
+  document.getElementById('sessions-chart').innerHTML=weeks.map((w,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;">
+      <div style="font-size:.68rem;font-weight:700;color:var(--blue)">${w}</div>
+      <div style="width:100%;height:${Math.round(w/2*80)}px;background:var(--blue);border-radius:5px 5px 0 0;opacity:${0.5+i*0.15}"></div>
+    </div>`).join('');
+}
+
+/* ══ MESSAGES ══ */
+function buildMessages(b){
+  const tutorName=b?.tutor?.profile?.full_name||'Ton tuteur';
+  const msgs=[
+    {av:ini(tutorName),col:'#1a56db',name:tutorName,preview:'Prépare bien la prochaine session !',time:'Aujourd\'hui',unread:true},
+    {av:'US',col:'#6b7280',name:'Support Ustad',preview:'Bienvenue sur Ustad ! N\'hésite pas à nous contacter si tu as besoin d\'aide.',time:'Hier',unread:true},
+  ];
+  document.getElementById('messages-list').innerHTML=msgs.map(m=>`
+    <div class="msg-item${m.unread?' unread':''}">
+      <div class="msg-av" style="background:${m.col}">${m.av}</div>
+      <div class="msg-info"><div class="msg-name">${m.name}</div><div class="msg-preview">${m.preview}</div></div>
+      <div class="msg-meta"><div class="msg-time">${m.time}</div>${m.unread?'<div class="msg-badge"></div>':''}</div>
+    </div>`).join('');
+  document.getElementById('notif-msg').textContent='2';
+  document.getElementById('notif-msg').style.display='inline';
+}
+
+/* ══ CANCEL SUBSCRIPTION ══ */
+async function cancelSub(bookingId){
+  if(!confirm('Es-tu sûr de vouloir résilier ton abonnement ? Tes sessions restantes seront annulées.'))return;
+  await sb.from('bookings').update({status:'cancelled'}).eq('id',bookingId);
+  showToast('Abonnement résilié.');
+  activeBooking=null;
+  renderWithoutBooking();
+}
+
+/* ══ NAV ══ */
+const TITLES={overview:'Vue d\'ensemble',planning:'Mon planning',sessions:'Mes sessions',progress:'Ma progression',messages:'Messages',subscription:'Mon abonnement',settings:'Paramètres'};
+function navigate(section){
+  Object.keys(TITLES).forEach(k=>{const el=document.getElementById(`s-${k}`);if(el)el.style.display=k===section?'block':'none';});
+  document.querySelectorAll('.sb-link').forEach(l=>l.classList.toggle('active',l.dataset.section===section));
+  document.getElementById('page-title').textContent=TITLES[section]||section;
+  if(section==='messages')document.getElementById('notif-msg').style.display='none';
+}
+document.querySelectorAll('.sb-link').forEach(l=>l.addEventListener('click',()=>navigate(l.dataset.section)));
+
+/* ══ SAVE SETTINGS ══ */
+async function saveSettings(){
+  const btn=event.target;btn.disabled=true;btn.innerHTML='<span class="spinner"></span>...';
+  try{
+    await sb.from('profiles').update({
+      full_name:`${document.getElementById('s-fname').value} ${document.getElementById('s-lname').value}`.trim(),
+      phone:document.getElementById('s-phone').value,
+      city:document.getElementById('s-city').value,
+    }).eq('id',currentUser.id);
+    showToast('✅ Paramètres sauvegardés !');
+    document.getElementById('sb-name').textContent=`${document.getElementById('s-fname').value} ${document.getElementById('s-lname').value}`.trim();
+  }catch(e){showToast('❌ Erreur : '+e.message);}
+  btn.disabled=false;btn.innerHTML='💾 Sauvegarder';
+}
+
+/* ══ RESET PASSWORD ══ */
+async function resetPwd(){
+  await sb.auth.resetPasswordForEmail(currentUser.email,{redirectTo:window.location.origin+'/reset-confirm.html'});
+  showToast('📧 Lien envoyé à '+currentUser.email);
+}
+
+/* ══ UTILS ══ */
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+async function logout(){await sb.auth.signOut();location.href='auth.html';}
+</script>
+</body>
+</html>
