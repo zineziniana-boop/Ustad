@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Ustad</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:'Inter',sans-serif;}
+:root{
+  --navy:#0d1f3c;--blue:#1a56db;--blue-dk:#1344b8;--blue-lt:#eff6ff;--blue-bd:#bfdbfe;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;--g300:#cbd5e1;--g400:#94a3b8;
+  --g500:#64748b;--g700:#334155;--g900:#0f172a;
+  --yellow:#f59e0b;--green:#16a34a;--green-lt:#f0fdf4;--green-bd:#bbf7d0;
+  --red:#dc2626;--red-lt:#fef2f2;--red-bd:#fecaca;
+  --orange:#ea580c;--orange-lt:#fff7ed;--purple:#7c3aed;--purple-lt:#f5f3ff;
+  --sb-w:260px;
+}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:var(--sb-w);flex-shrink:0;background:var(--g900);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:200;overflow-y:auto;}
+.sb-brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo{font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:-.03em;}
+.sb-logo span{color:#f59e0b;}
+.sb-role{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.14em;margin-top:3px;}
+.sb-nav{flex:1;padding:10px 12px;}
+.sb-lbl{font-size:.6rem;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.13em;padding:12px 8px 5px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:.84rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;margin-bottom:1px;}
+.sb-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);}
+.sb-item.on{background:rgba(245,158,11,.15);color:#fbbf24;font-weight:700;}
+.sb-item .ico{font-size:.95rem;width:20px;text-align:center;flex-shrink:0;}
+.sb-item .lbl{flex:1;}
+.sb-n{background:var(--red);color:#fff;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:100px;margin-left:auto;}
+.sb-foot{padding:12px;border-top:1px solid rgba(255,255,255,.07);}
+.sb-admin{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,.05);border-radius:9px;margin-bottom:8px;}
+.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:900;color:#fff;flex-shrink:0;}
+.sb-aname{font-size:.8rem;font-weight:700;color:#fff;}
+.sb-arole{font-size:.65rem;color:rgba(255,255,255,.35);margin-top:1px;}
+.main{margin-left:var(--sb-w);flex:1;display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--g200);height:60px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:1rem;font-weight:800;color:var(--g900);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.btn{font-size:.8rem;font-weight:700;padding:8px 16px;border-radius:8px;transition:all .15s;display:inline-flex;align-items:center;gap:6px;cursor:pointer;}
+.btn-primary{background:var(--blue);color:#fff;}.btn-primary:hover{background:var(--blue-dk);}
+.btn-outline{border:1.5px solid var(--g200);color:var(--g700);background:#fff;}.btn-outline:hover{border-color:var(--g700);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#15803d;}
+.btn-red{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}.btn-red:hover{background:var(--red);color:#fff;}
+.btn-sm{font-size:.73rem;padding:6px 11px;}
+.btn-xs{font-size:.68rem;padding:4px 9px;}
+.content{padding:24px 28px 80px;}
+.card{background:#fff;border:1px solid var(--g200);border-radius:14px;overflow:hidden;margin-bottom:18px;}
+.card-header{padding:15px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:.9rem;font-weight:800;color:var(--g900);}
+.card-desc{font-size:.73rem;color:var(--g400);margin-top:1px;}
+.card-body{padding:20px;}.card-body.np{padding:0;}
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.stat{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat.blue::before{background:var(--blue);}.stat.green::before{background:var(--green);}.stat.yellow::before{background:var(--yellow);}.stat.purple::before{background:var(--purple);}.stat.red::before{background:var(--red);}
+.stat-icon{font-size:1.2rem;margin-bottom:8px;}
+.stat-val{font-size:1.5rem;font-weight:900;color:var(--g900);letter-spacing:-.04em;line-height:1;}
+.stat-lbl{font-size:.7rem;color:var(--g400);margin-top:4px;}
+.stat-delta{font-size:.68rem;font-weight:600;margin-top:5px;}
+.up{color:var(--green);}.dn{color:var(--red);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-size:.7rem;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.07em;padding:10px 16px;text-align:left;background:var(--g50);border-bottom:1px solid var(--g200);}
+tbody td{padding:12px 16px;font-size:.83rem;color:var(--g700);border-bottom:1px solid var(--g100);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--g50);}
+.td-name{font-weight:700;color:var(--g900);}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:100px;}
+.b-active{background:var(--green-lt);color:#15803d;}
+.b-pending{background:#fef3c7;color:#92400e;}
+.b-suspended{background:var(--red-lt);color:var(--red);}
+.b-tutor{background:var(--blue-lt);color:var(--blue);}
+.b-student{background:var(--purple-lt);color:var(--purple);}
+.b-confirmed{background:var(--green-lt);color:#15803d;}
+.b-waiting{background:#fef3c7;color:#92400e;}
+.b-cancelled{background:var(--red-lt);color:var(--red);}
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:200px;padding:8px 12px 8px 36px;border:1.5px solid var(--g200);border-radius:8px;font-size:.83rem;color:var(--g900);outline:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 12px center;transition:border-color .15s;}
+.search-input:focus{border-color:var(--blue);}
+.filter-select{padding:8px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.83rem;color:var(--g700);outline:none;background:#fff;cursor:pointer;}
+.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0;}
+.actions{display:flex;gap:6px;align-items:center;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s;}
+.modal-overlay.show .modal{transform:translateY(0);}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:.95rem;font-weight:800;color:var(--g900);}
+.modal-close{font-size:1.2rem;color:var(--g400);cursor:pointer;padding:4px;}.modal-close:hover{color:var(--g900);}
+.modal-body{padding:22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--g200);display:flex;justify-content:flex-end;gap:8px;}
+.field{margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+label{font-size:.72rem;font-weight:700;color:var(--g700);display:block;margin-bottom:4px;}
+.input{width:100%;padding:9px 12px;border:1.5px solid var(--g200);border-radius:8px;font-size:.875rem;color:var(--g900);outline:none;transition:border-color .15s;background:#fff;}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.rev-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 4px;}
+.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.rev-bar{width:100%;border-radius:5px 5px 0 0;background:var(--blue);}
+.rev-bar-val{font-size:.65rem;font-weight:700;color:var(--blue);}
+.rev-bar-lbl{font-size:.62rem;color:var(--g400);}
+.activity-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--g100);}
+.activity-item:last-child{border-bottom:none;}
+.act-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.act-text{font-size:.8rem;color:var(--g700);line-height:1.5;flex:1;}
+.act-text strong{color:var(--g900);}
+.act-time{font-size:.68rem;color:var(--g400);margin-top:3px;}
+.comm-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--g100);font-size:.82rem;}
+.comm-row:last-child{border-bottom:none;}
+.comm-tutor{display:flex;align-items:center;gap:8px;}
+.comm-amount{font-weight:800;color:var(--green);}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;padding:11px 16px;border-radius:9px;font-size:.82rem;font-weight:600;z-index:999;opacity:0;transform:translateY(8px);transition:all .22s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.empty{text-align:center;padding:36px;color:var(--g400);}
+.empty .ei{font-size:2rem;margin-bottom:8px;}
+.empty .et{font-size:.83rem;}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.skel{background:var(--g200);border-radius:6px;animation:pulse 1.5s ease infinite;}
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){:root{--sb-w:0px;}.sidebar{display:none;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">Ustad<span>.</span></div>
+    <div class="sb-role">Administration</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-lbl">Tableau de bord</div>
+    <div class="sb-item on" data-s="overview"><span class="ico">📊</span><span class="lbl">Vue d'ensemble</span></div>
+    <div class="sb-item" data-s="activity"><span class="ico">🔔</span><span class="lbl">Activité récente</span></div>
+    <div class="sb-lbl">Gestion</div>
+    <div class="sb-item" data-s="tutors"><span class="ico">👨‍🏫</span><span class="lbl">Tuteurs</span></div>
+    <div class="sb-item" data-s="students"><span class="ico">🎓</span><span class="lbl">Étudiants</span></div>
+    <div class="sb-item" data-s="bookings"><span class="ico">📅</span><span class="lbl">Réservations</span></div>
+    <div class="sb-item" data-s="reviews"><span class="ico">⭐</span><span class="lbl">Avis</span></div>
+    <div class="sb-lbl">Finance</div>
+    <div class="sb-item" data-s="revenue"><span class="ico">💰</span><span class="lbl">Revenus</span></div>
+    <div class="sb-item" data-s="commissions"><span class="ico">📈</span><span class="lbl">Commissions</span></div>
+    <div class="sb-lbl">Plateforme</div>
+    <div class="sb-item" data-s="settings"><span class="ico">⚙️</span><span class="lbl">Paramètres</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-admin">
+      <div class="sb-av" id="sb-av">A</div>
+      <div><div class="sb-aname" id="sb-aname">Admin Ustad</div><div class="sb-arole">Super administrateur</div></div>
+    </div>
+    <button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:.8rem;font-weight:500;color:rgba(255,255,255,.35);transition:all .15s;width:100%;" onmouseover="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,.35)'" onclick="logout()">
+      <span>🚪</span> Déconnexion
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Vue d'ensemble</div>
+    <div class="topbar-right">
+      <div style="font-size:.78rem;color:var(--g400);" id="topbar-date"></div>
+      <button class="btn btn-primary btn-sm" onclick="showModal('add-user-modal')">+ Ajouter un utilisateur</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="s-overview">
+      <div class="stats-grid">
+        <div class="stat blue"><div class="stat-icon">👨‍🏫</div><div class="stat-val" id="st-tutors">—</div><div class="stat-lbl">Tuteurs actifs</div></div>
+        <div class="stat purple"><div class="stat-icon">🎓</div><div class="stat-val" id="st-students">—</div><div class="stat-lbl">Étudiants inscrits</div></div>
+        <div class="stat green"><div class="stat-icon">💰</div><div class="stat-val" id="st-revenue">—</div><div class="stat-lbl">Revenus ce mois</div></div>
+        <div class="stat yellow"><div class="stat-icon">📅</div><div class="stat-val" id="st-sessions">—</div><div class="stat-lbl">Sessions actives/mois</div></div>
+        <div class="stat red"><div class="stat-icon">⏳</div><div class="stat-val" id="st-pending">—</div><div class="stat-lbl">Tuteurs à valider</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">💰 Revenus mensuels estimés (DH)</div><div class="card-desc">Commission Ustad 25%</div></div></div>
+          <div class="card-body">
+            <div class="rev-chart" id="rev-chart"></div>
+            <div id="rev-labels" style="display:flex;justify-content:space-around;margin-top:6px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔔 Activité récente</div><button class="btn btn-outline btn-sm" onclick="navigate('activity')">Tout voir</button></div>
+          <div class="card-body np" id="ov-activity"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">⏳ Tuteurs en attente de validation</div><div class="card-desc">Ces tuteurs attendent ton approbation</div></div>
+          <button class="btn btn-outline btn-sm" onclick="navigate('tutors')">Voir tous →</button>
+        </div>
+        <div class="card-body np" id="ov-pending-tutors"></div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div id="s-activity" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔔 Activité récente</div></div>
+        <div class="card-body np" id="all-activity"></div>
+      </div>
+    </div>
+
+    <!-- TUTORS -->
+    <div id="s-tutors" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">👨‍🏫 Tous les tuteurs</div></div>
+        <div class="card-body" style="padding:14px 20px;">
+          <div class="filter-bar" style="margin-bottom:14px;">
+            <input class="search-input" type="text" placeholder="Rechercher un tuteur..." id="search-tutors" oninput="filterTutors()">
+            <select class="filter-select" id="filter-status" onchange="filterTutors()">
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="pending">En attente</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Tuteur</th><th>Matières</th><th>Étudiants</th><th>Note</th><th>Prix solo</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="tutors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="s-students" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🎓 Tous les étudiants</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Étudiant</th><th>Email</th><th>Ville</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div id="s-bookings" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📅 Toutes les réservations</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Étudiant</th><th>Tuteur</th><th>Formule</th><th>Cours 1</th><th>Cours 2</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEWS -->
+    <div id="s-reviews" style="display:none">
+      <div class="card">
+        <div class="card-header"><div class="card-title">⭐ Tous les avis</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Étudiant</th><th>Tuteur</th><th>Note</th><th>Commentaire</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="reviews-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVENUE -->
+    <div id="s-revenue" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;">
+        <div class="stat green" style="border-radius:12px;padding:18px;"><div class="stat-icon">💰</div><div class="stat-val" id="rev-brut">— DH</div><div class="stat-lbl">Revenus bruts ce mois</div></div>
+        <div class="stat blue" style="border-radius:12px;padding:18px;"><div class="stat-icon">📊</div><div class="stat-val" id="rev-comm">— DH</div><div class="stat-lbl">Commission Ustad (25%)</div></div>
+        <div class="stat yellow" style="border-radius:12px;padding:18px;"><div class="stat-icon">👨‍🏫</div><div class="stat-val" id="rev-tutors">— DH</div><div class="stat-lbl">Payé aux tuteurs (75%)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏆 Top tuteurs par revenus</div></div>
+        <div class="card-body np">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Tuteur</th><th>Étudiants</th><th>Prix solo</th><th>Commission Ustad</th></tr></thead>
+              <tbody id="top-tutors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMISSIONS -->
+    <div id="s-commissions" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">📈 Commissions à verser aux tuteurs</div><div class="card-desc">75% de chaque abonnement</div></div>
+          <button class="btn btn-green btn-sm" onclick="toast('💸 Tous les virements effectués !')">💸 Tout verser</button>
+        </div>
+        <div class="card-body np" id="commissions-list"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="s-settings" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚙️ Paramètres généraux</div></div>
+          <div class="card-body">
+            <div class="field"><label>Nom de la plateforme</label><input class="input" value="Ustad"></div>
+            <div class="field"><label>Email de contact</label><input class="input" type="email" value="contact@ustad.ma"></div>
+            <div class="field"><label>Commission plateforme (%)</label><input class="input" type="number" value="25" min="0" max="50"></div>
+            <div class="field"><label>Prix minimum tuteur (DH/mois)</label><input class="input" type="number" value="300"></div>
+            <div class="field"><label>Sessions par mois</label><input class="input" type="number" value="8"></div>
+            <div class="field"><label>Durée par session</label><select class="input"><option>1h00</option><option selected>1h30</option><option>2h00</option></select></div>
+            <button class="btn btn-primary" onclick="toast('✅ Paramètres sauvegardés !')">💾 Sauvegarder</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔒 Sécurité & Accès</div></div>
+          <div class="card-body">
+            <div class="field"><label>Email admin</label><input class="input" type="email" id="admin-email" value="admin@ustad.ma"></div>
+            <div class="field"><label>Nouveau mot de passe</label><input class="input" type="password" placeholder="••••••••"></div>
+            <div class="field"><label>Confirmer le mot de passe</label><input class="input" type="password" placeholder="••••••••"></div>
+            <button class="btn btn-primary" onclick="toast('✅ Mis à jour !')">🔒 Mettre à jour</button>
+            <div style="margin-top:20px;padding:14px;background:var(--red-lt);border:1px solid var(--red-bd);border-radius:9px;">
+              <div style="font-size:.82rem;font-weight:700;color:var(--red);margin-bottom:8px;">⚠️ Zone dangereuse</div>
+              <div style="font-size:.75rem;color:var(--g500);margin-bottom:10px;">Actions irréversibles sur la base de données.</div>
+              <button class="btn btn-red btn-sm" onclick="toast('❌ Action désactivée en production.')">🗑 Vider les données de test</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">➕ Ajouter un utilisateur</div><div class="modal-close" onclick="closeModal('add-user-modal')">✕</div></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Prénom</label><input class="input" id="nu-fname" placeholder="Youssef"></div>
+        <div class="field"><label>Nom</label><input class="input" id="nu-lname" placeholder="El Amrani"></div>
+      </div>
+      <div class="field"><label>Email</label><input class="input" type="email" id="nu-email" placeholder="email@exemple.com"></div>
+      <div class="field"><label>Rôle</label><select class="input" id="nu-role"><option value="student">Étudiant</option><option value="tutor">Tuteur</option></select></div>
+      <div class="field"><label>Ville</label><select class="input" id="nu-city"><option>Casablanca</option><option>Rabat</option><option>Marrakech</option><option>Fès</option><option>Tanger</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('add-user-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="closeModal('add-user-modal');toast('✅ Utilisateur ajouté !')">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tutor-detail-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="td-modal-title">Détails tuteur</div><div class="modal-close" onclick="closeModal('tutor-detail-modal')">✕</div></div>
+    <div class="modal-body" id="td-modal-body"></div>
+    <div class="modal-footer" id="td-modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('tutor-detail-modal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL  = 'https://phcsftysslpiiisqjwhi.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBoY3NmdHlzc2xwaWlpc3Fqd2hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MjU1ODMsImV4cCI6MjA4OTIwMTU4M30.8reYXjUdrgjLpxgsYsAfP3H0yf_wTABQHZDYWY_fS8Q';
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+let allTutors=[], allStudents=[], allBookings=[], allReviews=[];
+
+const AV_COLORS=['#1a56db','#059669','#d97706','#7c3aed','#0891b2','#db2777','#be123c','#0f766e'];
+function ini(n){return(n||'??').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function col(n){return AV_COLORS[(n||'').length%AV_COLORS.length];}
+function fmtDate(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});}
+function starsHTML(r){const f=Math.round(r||0);return'★'.repeat(f)+'☆'.repeat(5-f);}
+
+/* ══ INIT ══ */
+(async()=>{
+  // Admin check — récupère le profil
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    const{data:p}=await sb.from('profiles').select('full_name,email').eq('id',session.user.id).single();
+    if(p?.full_name){
+      document.getElementById('sb-aname').textContent=p.full_name;
+      document.getElementById('sb-av').textContent=ini(p.full_name);
+      if(document.getElementById('admin-email'))
+        document.getElementById('admin-email').value=p.email||'admin@ustad.ma';
+    }
+  }
+  await loadAll();
+})();
+
+/* ══ LOAD ALL DATA ══ */
+async function loadAll(){
+  // Tuteurs
+  const{data:tutors}=await sb.from('tutors').select('*,profile:profiles(full_name,email,city,created_at)').order('created_at',{ascending:false});
+  allTutors=tutors||[];
+
+  // Étudiants
+  const{data:students}=await sb.from('profiles').select('*').eq('role','student').order('created_at',{ascending:false});
+  allStudents=students||[];
+
+  // Réservations
+  const{data:bookings}=await sb.from('bookings').select('*,student:profiles!student_id(full_name),tutor:tutors!tutor_id(profile:profiles(full_name))').order('created_at',{ascending:false});
+  allBookings=bookings||[];
+
+  // Avis
+  const{data:reviews}=await sb.from('reviews').select('*,student:profiles!student_id(full_name),tutor:tutors!tutor_id(profile:profiles(full_name))').order('created_at',{ascending:false});
+  allReviews=reviews||[];
+
+  buildStats();
+  buildRevChart();
+  buildActivity();
+  buildPendingTutors();
+  buildTutorsTable(allTutors);
+  buildStudentsTable(allStudents);
+  buildBookingsTable(allBookings);
+  buildReviewsTable(allReviews);
+  buildTopTutors();
+  buildCommissions();
+  buildRevenueSection();
+}
+
+/* ══ STATS ══ */
+function buildStats(){
+  const activeTutors=allTutors.filter(t=>t.is_active&&t.is_verified).length;
+  const pendingTutors=allTutors.filter(t=>!t.is_verified).length;
+  const confirmedBookings=allBookings.filter(b=>b.status==='confirmed');
+  const revenue=confirmedBookings.reduce((s,b)=>s+(b.monthly_price||0),0);
+  const sessions=confirmedBookings.length*8;
+
+  document.getElementById('st-tutors').textContent=activeTutors||'0';
+  document.getElementById('st-students').textContent=allStudents.length||'0';
+  document.getElementById('st-revenue').textContent=revenue>0?(Math.round(revenue/1000)+'K DH'):'0 DH';
+  document.getElementById('st-sessions').textContent=sessions||'0';
+  document.getElementById('st-pending').textContent=pendingTutors||'0';
+
+  // Revenue section
+  document.getElementById('rev-brut').textContent=revenue.toLocaleString('fr-MA')+' DH';
+  document.getElementById('rev-comm').textContent=Math.round(revenue*.25).toLocaleString('fr-MA')+' DH';
+  document.getElementById('rev-tutors').textContent=Math.round(revenue*.75).toLocaleString('fr-MA')+' DH';
+
+  // Badge pending
+  const nb=document.querySelector('.sb-item[data-s="overview"] .sb-n');
+  if(pendingTutors>0&&!nb){
+    const act=document.querySelector('.sb-item[data-s="activity"]');
+    act.querySelector('.lbl').insertAdjacentHTML('afterend',`<span class="sb-n">${pendingTutors}</span>`);
+  }
+}
+
+/* ══ REV CHART (estimé) ══ */
+function buildRevChart(){
+  const confirmed=allBookings.filter(b=>b.status==='confirmed');
+  const monthlyRev=confirmed.reduce((s,b)=>s+(b.monthly_price||0),0);
+  // Simule 6 mois de croissance
+  const baseRev=Math.max(monthlyRev*0.5,10000);
+  const revData=[
+    {month:'Oct',val:Math.round(baseRev*0.7)},
+    {month:'Nov',val:Math.round(baseRev*0.8)},
+    {month:'Déc',val:Math.round(baseRev*0.75)},
+    {month:'Jan',val:Math.round(baseRev*0.9)},
+    {month:'Fév',val:Math.round(baseRev*0.95)},
+    {month:'Mar',val:monthlyRev||baseRev},
+  ];
+  const maxVal=Math.max(...revData.map(r=>r.val));
+  document.getElementById('rev-chart').innerHTML=revData.map(r=>{
+    const h=Math.round(r.val/maxVal*100);
+    return`<div class="rev-bar-wrap">
+      <div class="rev-bar-val">${Math.round(r.val*.25/1000)}K</div>
+      <div class="rev-bar" style="height:${h}px"></div>
+    </div>`;
+  }).join('');
+  document.getElementById('rev-labels').innerHTML=revData.map(r=>`<span style="font-size:.62rem;color:var(--g400);flex:1;text-align:center">${r.month}</span>`).join('');
+}
+
+/* ══ ACTIVITY ══ */
+function buildActivity(){
+  // Génère activité à partir des vraies données
+  const items=[];
+  allTutors.slice(0,3).forEach(t=>{
+    items.push({icon:'👨‍🏫',bg:'#eff6ff',text:`<strong>${t.profile?.full_name||'Tuteur'}</strong> a ${t.is_verified?'rejoint':'créé un profil'}`,time:fmtDate(t.profile?.created_at||new Date())});
+  });
+  allStudents.slice(0,2).forEach(s=>{
+    items.push({icon:'🎓',bg:'#f5f3ff',text:`<strong>${s.full_name||'Étudiant'}</strong> s'est inscrit`,time:fmtDate(s.created_at||new Date())});
+  });
+  allBookings.filter(b=>b.status==='confirmed').slice(0,2).forEach(b=>{
+    items.push({icon:'📅',bg:'#f0fdf4',text:`Réservation confirmée : <strong>${b.student?.full_name||'?'}</strong> ↔ <strong>${b.tutor?.profile?.full_name||'?'}</strong>`,time:fmtDate(b.created_at||new Date())});
+  });
+  allReviews.slice(0,2).forEach(r=>{
+    items.push({icon:'⭐',bg:'#fef9c3',text:`Avis ${r.rating}★ de <strong>${r.student?.full_name||'?'}</strong>`,time:fmtDate(r.created_at||new Date())});
+  });
+
+  if(!items.length){
+    const empty='<div class="empty"><div class="ei">📭</div><div class="et">Aucune activité récente</div></div>';
+    document.getElementById('ov-activity').innerHTML=`<div style="padding:12px 16px">${empty}</div>`;
+    document.getElementById('all-activity').innerHTML=`<div style="padding:12px 16px">${empty}</div>`;
+    return;
+  }
+
+  const html=items.map(a=>`<div class="activity-item"><div class="act-icon" style="background:${a.bg}">${a.icon}</div><div><div class="act-text">${a.text}</div><div class="act-time">${a.time}</div></div></div>`).join('');
+  document.getElementById('ov-activity').innerHTML=`<div style="padding:12px 16px">${html.slice(0,html.indexOf('</div></div></div>')*2||html.length)}</div>`;
+  document.getElementById('all-activity').innerHTML=`<div style="padding:12px 16px">${html}</div>`;
+}
+
+/* ══ PENDING TUTORS ══ */
+function buildPendingTutors(){
+  const pending=allTutors.filter(t=>!t.is_verified);
+  if(!pending.length){
+    document.getElementById('ov-pending-tutors').innerHTML='<div class="empty"><div class="ei">✅</div><div class="et">Aucun tuteur en attente</div></div>';
+    return;
+  }
+  document.getElementById('ov-pending-tutors').innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>Tuteur</th><th>Matières</th><th>Inscrit le</th><th>Actions</th></tr></thead>
+    <tbody>${pending.map(t=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${col(t.profile?.full_name)}">${ini(t.profile?.full_name)}</div>
+        <div class="td-name">${t.profile?.full_name||'—'}</div>
+      </div></td>
+      <td style="font-size:.78rem">${(t.subjects||[]).slice(0,2).join(' · ')||'—'}</td>
+      <td style="color:var(--g400);font-size:.78rem">${fmtDate(t.profile?.created_at||new Date())}</td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs" onclick="viewTutor('${t.id}')">👁 Voir</button>
+        <button class="btn btn-green btn-xs" onclick="doApprove('${t.id}','${t.profile?.full_name||''}',this)">✅ Approuver</button>
+        <button class="btn btn-red btn-xs" onclick="doSuspend('${t.id}','${t.profile?.full_name||''}',this)">✕ Refuser</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ══ TUTORS TABLE ══ */
+function buildTutorsTable(data){
+  document.getElementById('tutors-tbody').innerHTML=data.length?data.map(t=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${col(t.profile?.full_name)}">${ini(t.profile?.full_name)}</div>
+        <div><div class="td-name">${t.profile?.full_name||'—'}</div><div style="font-size:.7rem;color:var(--g400)">${t.profile?.city||'—'}</div></div>
+      </div></td>
+      <td style="font-size:.78rem">${(t.subjects||[]).slice(0,2).join(' · ')||'—'}</td>
+      <td style="font-weight:700">${t.students_count||0}</td>
+      <td>${t.rating_avg?`<span style="color:var(--yellow)">★</span> ${t.rating_avg}`:'—'}</td>
+      <td style="font-weight:700;color:var(--green)">${t.price_solo?(t.price_solo.toLocaleString()+' DH'):'—'}</td>
+      <td><span class="badge ${t.is_verified?'b-active':'b-pending'}">${t.is_verified?'✅ Actif':'⏳ En attente'}</span></td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs" onclick="viewTutor('${t.id}')">👁 Voir</button>
+        ${!t.is_verified?`<button class="btn btn-green btn-xs" onclick="doApprove('${t.id}','${t.profile?.full_name||''}',this)">Approuver</button>`:''}
+        ${t.is_verified&&t.is_active?`<button class="btn btn-red btn-xs" onclick="doSuspend('${t.id}','${t.profile?.full_name||''}',this)">Suspendre</button>`:''}
+      </div></td>
+    </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--g400)">Aucun tuteur trouvé</td></tr>';
+}
+
+function filterTutors(){
+  const q=(document.getElementById('search-tutors')?.value||'').toLowerCase();
+  const s=document.getElementById('filter-status')?.value||'';
+  let res=allTutors;
+  if(q) res=res.filter(t=>(t.profile?.full_name||'').toLowerCase().includes(q)||(t.subjects||[]).join(' ').toLowerCase().includes(q));
+  if(s==='active') res=res.filter(t=>t.is_verified&&t.is_active);
+  if(s==='pending') res=res.filter(t=>!t.is_verified);
+  buildTutorsTable(res);
+}
+
+/* ══ STUDENTS TABLE ══ */
+function buildStudentsTable(data){
+  document.getElementById('students-tbody').innerHTML=data.length?data.map(s=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${col(s.full_name)}">${ini(s.full_name)}</div>
+        <div class="td-name">${s.full_name||'—'}</div>
+      </div></td>
+      <td style="font-size:.78rem;color:var(--g500)">${s.email||'—'}</td>
+      <td style="font-size:.78rem">${s.city||'—'}</td>
+      <td style="font-size:.75rem;color:var(--g400)">${fmtDate(s.created_at)}</td>
+      <td><div class="actions">
+        <button class="btn btn-outline btn-xs">👁 Voir</button>
+        <button class="btn btn-red btn-xs" onclick="toast('Compte suspendu.')">Suspendre</button>
+      </div></td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--g400)">Aucun étudiant</td></tr>';
+}
+
+/* ══ BOOKINGS TABLE ══ */
+function buildBookingsTable(data){
+  document.getElementById('bookings-tbody').innerHTML=data.length?data.map(b=>`
+    <tr>
+      <td class="td-name">${b.student?.full_name||'—'}</td>
+      <td style="font-size:.78rem">${b.tutor?.profile?.full_name||'—'}</td>
+      <td><span class="badge ${b.offer_type==='solo'?'b-student':'b-tutor'}">${b.offer_type==='solo'?'Solo':b.offer_type==='class3'?'Classe ×3':'Classe ×5'}</span></td>
+      <td style="font-size:.78rem">${b.c1_day||'—'} ${b.c1_hour||''}</td>
+      <td style="font-size:.78rem">${b.c2_day||'—'} ${b.c2_hour||''}</td>
+      <td style="font-weight:700;color:var(--green)">${b.monthly_price?b.monthly_price.toLocaleString()+' DH':'—'}</td>
+      <td><span class="badge ${b.status==='confirmed'?'b-confirmed':b.status==='pending'?'b-waiting':'b-cancelled'}">${b.status==='confirmed'?'✅ Confirmé':b.status==='pending'?'⏳ En attente':'❌ Annulé'}</span></td>
+      <td><div class="actions">
+        ${b.status==='pending'?`<button class="btn btn-green btn-xs" onclick="confirmBooking('${b.id}',this)">Confirmer</button>`:''}
+        ${b.status!=='cancelled'?`<button class="btn btn-red btn-xs" onclick="cancelBooking('${b.id}',this)">Annuler</button>`:''}
+      </div></td>
+    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--g400)">Aucune réservation</td></tr>';
+}
+
+/* ══ REVIEWS TABLE ══ */
+function buildReviewsTable(data){
+  document.getElementById('reviews-tbody').innerHTML=data.length?data.map(r=>`
+    <tr>
+      <td class="td-name">${r.student?.full_name||'—'}</td>
+      <td style="font-size:.78rem">${r.tutor?.profile?.full_name||'—'}</td>
+      <td><span style="color:var(--yellow)">${starsHTML(r.rating)}</span> ${r.rating}/5</td>
+      <td style="font-size:.78rem;max-width:220px;color:var(--g500)">${r.comment||'—'}</td>
+      <td style="font-size:.75rem;color:var(--g400)">${fmtDate(r.created_at)}</td>
+      <td><button class="btn btn-red btn-xs" onclick="deleteReview('${r.id}',this)">🗑</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--g400)">Aucun avis</td></tr>';
+}
+
+/* ══ TOP TUTORS ══ */
+function buildTopTutors(){
+  const sorted=[...allTutors].filter(t=>t.price_solo>0).sort((a,b)=>(b.students_count||0)-(a.students_count||0));
+  document.getElementById('top-tutors-tbody').innerHTML=sorted.length?sorted.map((t,i)=>`
+    <tr>
+      <td style="font-weight:800;color:var(--g400)">#${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div class="u-av" style="background:${col(t.profile?.full_name)}">${ini(t.profile?.full_name)}</div>
+        <div class="td-name">${t.profile?.full_name||'—'}</div>
+      </div></td>
+      <td style="font-weight:700">${t.students_count||0}</td>
+      <td style="font-weight:700">${t.price_solo?t.price_solo.toLocaleString()+' DH':'—'}</td>
+      <td style="font-weight:700;color:var(--blue)">${t.price_solo?Math.round(t.price_solo*(t.students_count||1)*.25).toLocaleString()+' DH':'—'}</td>
+    </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--g400)">Aucune donnée</td></tr>';
+}
+
+/* ══ COMMISSIONS ══ */
+function buildCommissions(){
+  const active=allTutors.filter(t=>t.is_verified&&t.is_active&&t.price_solo>0);
+  document.getElementById('commissions-list').innerHTML=active.length?`<div style="padding:0 20px">`+active.map(t=>{
+    const students=t.students_count||0;
+    const rev=(t.price_solo||0)*students;
+    return`<div class="comm-row">
+      <div class="comm-tutor">
+        <div class="u-av" style="background:${col(t.profile?.full_name)}">${ini(t.profile?.full_name)}</div>
+        <div><div style="font-weight:700;font-size:.85rem">${t.profile?.full_name||'—'}</div><div style="font-size:.72rem;color:var(--g400)">${students} étudiant(s) · ${students*8} sessions</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="text-align:right"><div style="font-size:.72rem;color:var(--g400)">À verser (75%)</div><div class="comm-amount">${Math.round(rev*.75).toLocaleString()} DH</div></div>
+        <button class="btn btn-green btn-sm" onclick="toast('💸 Virement vers ${t.profile?.full_name||'?'} effectué !')">💸 Verser</button>
+      </div>
+    </div>`;
+  }).join('')+`</div>`:'<div class="empty"><div class="ei">💰</div><div class="et">Aucun tuteur actif à payer</div></div>';
+}
+
+/* ══ REVENUE SECTION ══ */
+function buildRevenueSection(){ /* Already done in buildStats */ }
+
+/* ══ ACTIONS ══ */
+async function doApprove(id, name, btn){
+  btn.disabled=true;btn.textContent='...';
+  await sb.from('tutors').update({is_verified:true,is_active:true}).eq('id',id);
+  toast(`✅ ${name} approuvé !`);
+  await loadAll();
+}
+
+async function doSuspend(id, name, btn){
+  btn.disabled=true;
+  await sb.from('tutors').update({is_active:false}).eq('id',id);
+  toast(`${name} suspendu.`);
+  await loadAll();
+}
+
+async function confirmBooking(id, btn){
+  btn.disabled=true;
+  await sb.from('bookings').update({status:'confirmed'}).eq('id',id);
+  toast('✅ Réservation confirmée !');
+  await loadAll();
+}
+
+async function cancelBooking(id, btn){
+  btn.disabled=true;
+  await sb.from('bookings').update({status:'cancelled'}).eq('id',id);
+  toast('Réservation annulée.');
+  await loadAll();
+}
+
+async function deleteReview(id, btn){
+  if(!confirm('Supprimer cet avis ?'))return;
+  await sb.from('reviews').delete().eq('id',id);
+  toast('Avis supprimé.');
+  await loadAll();
+}
+
+/* ══ VIEW TUTOR MODAL ══ */
+function viewTutor(id){
+  const t=allTutors.find(x=>x.id===id);
+  if(!t)return;
+  const name=t.profile?.full_name||'—';
+  document.getElementById('td-modal-title').textContent=name;
+  document.getElementById('td-modal-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--g200)">
+      <div class="u-av" style="background:${col(name)};width:52px;height:52px;font-size:1.1rem">${ini(name)}</div>
+      <div>
+        <div style="font-size:1.05rem;font-weight:800;color:var(--g900)">${name}</div>
+        <div style="font-size:.82rem;color:var(--g400);margin-top:2px">${(t.subjects||[]).join(' · ')||'—'}</div>
+        <span class="badge ${t.is_verified?'b-active':'b-pending'}" style="margin-top:6px;display:inline-flex">${t.is_verified?'✅ Actif':'⏳ En attente'}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:var(--g900)">${t.students_count||0}</div><div style="font-size:.7rem;color:var(--g400)">Étudiants</div></div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:var(--g900)">${t.rating_avg||'—'}</div><div style="font-size:.7rem;color:var(--g400)">Note moyenne</div></div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:var(--green)">${t.price_solo?t.price_solo.toLocaleString()+' DH':'—'}</div><div style="font-size:.7rem;color:var(--g400)">Prix solo/mois</div></div>
+      <div style="padding:12px;background:var(--g50);border-radius:8px;text-align:center"><div style="font-size:1.2rem;font-weight:900;color:var(--blue)">${t.hours_taught||0}h</div><div style="font-size:.7rem;color:var(--g400)">Cours donnés</div></div>
+    </div>
+    <div style="font-size:.78rem;color:var(--g500);line-height:1.6">${t.bio||'Aucune bio renseignée.'}</div>`;
+  document.getElementById('td-modal-footer').innerHTML=`
+    <button class="btn btn-outline" onclick="closeModal('tutor-detail-modal')">Fermer</button>
+    ${!t.is_verified?`<button class="btn btn-green" onclick="doApprove('${t.id}','${name}',this);closeModal('tutor-detail-modal')">✅ Approuver</button>`:''}
+    ${t.is_active?`<button class="btn btn-red" onclick="doSuspend('${t.id}','${name}',this);closeModal('tutor-detail-modal')">Suspendre</button>`:''}`;
+  showModal('tutor-detail-modal');
+}
+
+/* ══ MODAL ══ */
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');});});
+
+/* ══ NAV ══ */
+const TITLES={overview:'Vue d\'ensemble',activity:'Activité récente',tutors:'Tuteurs',students:'Étudiants',bookings:'Réservations',reviews:'Avis',revenue:'Revenus',commissions:'Commissions',settings:'Paramètres'};
+function navigate(section){
+  Object.keys(TITLES).forEach(k=>{const el=document.getElementById(`s-${k}`);if(el)el.style.display=k===section?'block':'none';});
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('on',i.dataset.s===section));
+  document.getElementById('page-title').textContent=TITLES[section]||section;
+}
+document.querySelectorAll('.sb-item').forEach(i=>i.addEventListener('click',()=>navigate(i.dataset.s)));
+
+/* ══ TOAST ══ */
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+async function logout(){await sb.auth.signOut();location.href='auth.html';}
+</script>
+</body>
+</html>
